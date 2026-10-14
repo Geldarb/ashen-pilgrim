@@ -91,10 +91,10 @@ function hostMsg(from, d) {
   const q = peerOf(from);
   if (d.k === 'st') {
     const wasIn = q.inRoom; q.cls = d.cls; q.name = d.name || q.name;
-    if (d.w) { const key = JSON.stringify(d.w); if (key !== q.wandKey) { q.wandKey = key; q.wand = makeWand(Object.assign({}, d.w, { mana: d.w.maxMana, idx: 0, cd: .4 })); } }
+    if (d.w) { const key = JSON.stringify(d.w); if (key !== q.wandKey) { q.wandKey = key; q.wand = makeWand(Object.assign({}, d.w, { idx: 0, cd: .4 })); q.wand.mana = mmax(q.wand); q.sg = null; } }
     if (!room || !d.inRoom) { q.hp = d.hp; q.maxHp = d.maxHp; q.inRoom = false; q.down = false; NET.ready[d.ready ? 'add' : 'delete'](from); if (d.ready !== q.lastReady) { q.lastReady = d.ready; if (mode === 'map' && document.getElementById('door0')) showMap(); } return; }
     if (!wasIn) { q.inRoom = true; q.hp = d.hp; q.maxHp = d.maxHp; q.em = 0; q.down = false; q.inv = 1; }
-    if (!q.down) { q.x = dx_(d.x); q.y = dy_(d.y); q.face = d.face; q.walk = d.walk; q.dodge = d.dodge; }
+    if (!q.down) { q.x = dx_(d.x); q.y = dy_(d.y); q.face = d.face; q.walk = d.walk; if (d.dodge && !q.dodge) dodgeSigils(q, q.wand, room); q.dodge = d.dodge; }
   }
   if (d.k === 'skill' && room && q.inRoom && !q.down && q.skillCd <= 0) {
     q.skillCd = q.cls === 'witch' ? 9 : 7;
@@ -106,7 +106,7 @@ const livePeers = () => [...NET.peers.values()].filter(q => q.inRoom);
 coopN = () => NET.on ? Math.max(1, NET.players.length) : 1;
 targets = () => { const out = P.down ? [] : [P]; if (NET.on && NET.host) for (const q of livePeers()) if (!q.down) out.push(q); return out; };
 foeTarget = f => { let b = null, bd = 1e9; for (const q of targets()) { const d = Math.hypot(q.x - f.x, q.y - f.y); if (d < bd) { bd = d; b = q; } } return b || P; };
-hurtTarget = (T, d) => { if (T === P) return hurtPlayer(d); if (T.inv > 0 || T.dodge || T.down) return; T.hp -= d; T.inv = .7; if (T.hp <= 0) { T.hp = 0; T.down = true; T.rev = 0; toast('💀 ' + T.name + ' is down!', 1400); } };
+hurtTarget = (T, d) => { if (T === P) return hurtPlayer(d); if (T.inv > 0 || T.dodge || T.down) return; if (absorbHit(T, T.wand, room)) { T.inv = .5; return; } T.hp -= d; T.inv = .7; thornsOf(T, T.wand, room); if (T.hp <= 0) { T.hp = 0; T.down = true; T.rev = 0; toast('💀 ' + T.name + ' is down!', 1400); } };
 collectDrop = T => { if (T === P) { G.embersRun += 1; G.flame = Math.min(G.maxFlame, G.flame + 1.2); } else { T.em++; T.hp = Math.min(T.maxHp, T.hp + 1.2); } };
 const _zero = onZeroHp;
 onZeroHp = () => { if (!NET.on) return _zero(); P.down = true; P.rev = 0; toast('💀 You are down — an ally can revive you!', 1800); };
@@ -119,7 +119,7 @@ update = dt => {
   for (const q of livePeers()) {
     q.inv = Math.max(0, q.inv - dt); q.skillCd = Math.max(0, q.skillCd - dt); q.castT = Math.max(0, q.castT - dt);
     const w = q.wand; if (!w || q.down) continue;
-    w.mana = Math.min(w.maxMana, w.mana + w.regen * dt); w.cd -= dt;
+    w.mana = Math.min(mmax(w), w.mana + mreg(w) * dt); w.cd -= dt; { const kc = room.caster; room.caster = q; sigilTick(q, w, dt, room); room.caster = kc; }
     const t = nearestFoe(room, q.x, q.y); if (t) q.face = Math.atan2(t.y - q.y, t.x - q.x);
     if (t && w.cd <= 0) { q.castT = .18; room.fxs.push({ type: 'circle', x: q.x, y: q.y, r: 20, life: .3, c: w.slots.includes('inverted') ? '#e8e4f0' : `hsl(${w.hue},80%,65%)` }); const keep = room.caster; room.caster = q; tryCast(room, w, q.x + Math.cos(q.face) * 14, q.y - 14, Math.atan2(t.y - t.r * .8 - (q.y - 14), t.x - q.x), n => { q.hp = Math.max(1, q.hp - n); }); room.caster = keep; }
   }
@@ -135,13 +135,13 @@ update = dt => {
 };
 function makeSnap() {
   const A = arena(), r2 = v => Math.round(v * 10) / 10;
-  const fxs = []; for (const f of room.fxs) if (!f._s && f.type !== 'sfx') { f._s = 1; fxs.push({ type: f.type, x: nx(f.x), y: ny(f.y), x2: f.x2 != null ? nx(f.x2) : undefined, y2: f.y2 != null ? ny(f.y2) : undefined, r: f.r, R: f.R, life: f.life, c: f.c, txt: f.txt }); }
-  const pl = [[NET.id, nx(P.x), ny(P.y), r2(P.face), r2(P.walk), Math.ceil(G.flame), G.maxFlame, P.down ? 1 : 0, r2(P.castT || 0), wand().hue, leavesOf(wand()), G.cls, r2(P.rev || 0), 0]];
-  for (const q of livePeers()) pl.push([q.id, nx(q.x), ny(q.y), r2(q.face), r2(q.walk), Math.ceil(q.hp), q.maxHp, q.down ? 1 : 0, r2(q.castT), q.wand ? q.wand.hue : 30, q.wand ? leavesOf(q.wand) : 1, q.cls, r2(q.rev || 0), q.em]);
+  const fxs = []; for (const f of room.fxs) if (!f._s && f.type !== 'sfx') { f._s = 1; fxs.push({ type: f.type, x: nx(f.x), y: ny(f.y), x2: f.x2 != null ? nx(f.x2) : undefined, y2: f.y2 != null ? ny(f.y2) : undefined, r: f.r, R: f.R, n: f.n, life: f.life, c: f.c, txt: f.txt }); }
+  const pl = [[NET.id, nx(P.x), ny(P.y), r2(P.face), r2(P.walk), Math.ceil(G.flame), G.maxFlame, P.down ? 1 : 0, r2(P.castT || 0), wand().hue, leavesOf(wand()), G.cls, r2(P.rev || 0), 0, sigList(wand()), P.shield ? 1 : 0]];
+  for (const q of livePeers()) pl.push([q.id, nx(q.x), ny(q.y), r2(q.face), r2(q.walk), Math.ceil(q.hp), q.maxHp, q.down ? 1 : 0, r2(q.castT), q.wand ? q.wand.hue : 30, q.wand ? leavesOf(q.wand) : 1, q.cls, r2(q.rev || 0), q.em, sigList(q.wand), q.shield ? 1 : 0]);
   return {
     k: 'snap', kind: room.kind, aw: A.x1 - A.x0, ah: A.y1 - A.y0, done: room.done ? 1 : 0, fl: G.floor, st: G.step,
     foes: room.foes.map(f => [f.id, f.type, nx(f.x), ny(f.y), Math.ceil(f.hp), Math.ceil(f.max), f.elite ? 1 : 0, f.boss ? 1 : 0, f.hit > 0 ? 1 : 0, f.phase, r2(Math.max(0, f.spawnT)), f.burn > 0 ? 1 : 0, f.frozen > 0 ? 1 : 0, f.poison > 0 ? 1 : 0, r2(f.r)]),
-    shots: room.shots.slice(-140).map(b => [b.kind, nx(b.x), ny(b.y), Math.round(b.vx), Math.round(b.vy), r2(b.r), b.col, b.el || 0, r2(b.age), r2(b.spin || 0), b.novaR != null ? r2(b.novaR) : -1, b.tx != null ? nx(b.tx) : -1, b.ty != null ? ny(b.ty) : -1, (b.trig ? 1 : 0) | (b.homing ? 2 : 0) | (b.poison ? 4 : 0)]),
+    shots: room.shots.slice(-140).map(b => [b.kind, nx(b.x), ny(b.y), Math.round(b.vx), Math.round(b.vy), r2(b.r), b.col, b.el || 0, r2(b.age), r2(b.spin || 0), b.novaR != null ? r2(b.novaR) : -1, b.tx != null ? nx(b.tx) : -1, b.ty != null ? ny(b.ty) : -1, (b.trig ? 1 : 0) | (b.homing ? 2 : 0) | (b.poison ? 4 : 0), b.ov || 0, b.grow || 0]),
     es: room.eshots.map(b => [nx(b.x), ny(b.y), Math.round(b.vx), Math.round(b.vy), b.col || 0]),
     dr: room.drops.map(e => [nx(e.x), ny(e.y)]), wi: room.wisps.map(w => [nx(w.x), ny(w.y)]), fxs, pl,
   };
@@ -191,13 +191,13 @@ function clientStartRoom(kind) {
 function clientUpdate(dt) {
   const A = arena(); room.t += dt;
   P.inv = Math.max(0, P.inv - dt); P.hurt = Math.max(0, P.hurt - dt); P.dodgeCd = Math.max(0, P.dodgeCd - dt); P.skillCd = Math.max(0, P.skillCd - dt);
-  const spd = CLASSES[G.cls].speed;
+  const spd = CLASSES[G.cls].speed * (1 + .12 * sigN(wand(), 'lode'));
   if (P.down) P.vx = P.vy = 0;
   else if (P.dodgeT > 0) { P.dodgeT -= dt; room.parts.push({ x: P.x, y: P.y - 8, vx: 0, vy: 0, life: .25, c: '#ff8a2a55', s: 9 }); }
   else { let dx = input.dx, dy = input.dy; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } P.vx = dx * spd; P.vy = dy * spd; if (l > .1) P.walk += dt * 10; }
   P.x = clamp(P.x + P.vx * dt, A.x0 + P.r, A.x1 - P.r); P.y = clamp(P.y + P.vy * dt, A.y0 + P.r + 10, A.y1 - P.r);
   const t = nearestFoe(room, P.x, P.y); if (t) P.face = Math.atan2(t.y - P.y, t.x - P.x); else if (Math.hypot(P.vx, P.vy) > 1) P.face = Math.atan2(P.vy, P.vx);
-  for (const w of G.wands) { w.mana = Math.min(w.maxMana, w.mana + w.regen * dt); }
+  for (const w of G.wands) { w.mana = Math.min(mmax(w), w.mana + mreg(w) * dt); }
   // extrapolate host entities between snapshots
   const k = room.scale || 1;
   for (const b of room.shots) { b.x += b.vx * k * dt; b.y += b.vy * k * dt; b.age += dt; b.spin += dt * 10; }
@@ -229,18 +229,18 @@ function applySnap(s) {
   }
   for (const [id, f] of NET.foeMap) if (!seen.has(id)) { NET.foeMap.delete(id); G.kills++; for (let i = 0; i < 14; i++) room.parts.push({ x: f.x, y: f.y, vx: (Math.random() - .5) * 220, vy: (Math.random() - .5) * 220, life: .6, c: i % 2 ? '#ff8a2a' : '#3a3428', s: 3 }); }
   room.foes = [...NET.foeMap.values()];
-  room.shots = s.shots.map(([kind, x, y, vx, vy, r, col, el, age, spin, novaR, tx, ty, fl]) => ({ kind, x: dx_(x), y: dy_(y), vx, vy, r, col, el: el || undefined, age, spin, novaR: novaR >= 0 ? novaR : undefined, tx: tx >= 0 ? dx_(tx) : undefined, ty: ty >= 0 ? dy_(ty) : undefined, trig: fl & 1, homing: fl & 2, poison: fl & 4, hit: [] }));
+  room.shots = s.shots.map(([kind, x, y, vx, vy, r, col, el, age, spin, novaR, tx, ty, fl, ov, grow]) => ({ ov, grow, kind, x: dx_(x), y: dy_(y), vx, vy, r, col, el: el || undefined, age, spin, novaR: novaR >= 0 ? novaR : undefined, tx: tx >= 0 ? dx_(tx) : undefined, ty: ty >= 0 ? dy_(ty) : undefined, trig: fl & 1, homing: fl & 2, poison: fl & 4, hit: [] }));
   room.eshots = s.es.map(([x, y, vx, vy, col]) => ({ x: dx_(x), y: dy_(y), vx, vy, col: col || undefined }));
   room.drops = s.dr.map(([x, y], i) => ({ x: dx_(x), y: dy_(y), t: i }));
   room.wisps = s.wi.map(([x, y]) => ({ x: dx_(x), y: dy_(y), life: 1 }));
   for (const f of s.fxs) room.fxs.push(Object.assign({}, f, { x: dx_(f.x), y: dy_(f.y), x2: f.x2 != null ? dx_(f.x2) : undefined, y2: f.y2 != null ? dy_(f.y2) : undefined }));
   room.done = !!s.done;
   const others = [];
-  for (const [id, x, y, face, walk, hp, maxHp, down, castT, hue, leaves, cls, rev, em] of s.pl) {
+  for (const [id, x, y, face, walk, hp, maxHp, down, castT, hue, leaves, cls, rev, em, sigs, shield] of s.pl) {
     const pl = NET.players.find(p => p.id === id) || { name: 'Mage', slot: 0 };
-    if (id === NET.id) { const was = P.down; if (hp < G.flame - .5) { P.hurt = .25; shake = 5; } G.flame = hp; G.maxFlame = maxHp; P.down = !!down; P.rev = rev; P.castT = castT; G.embersRun = NET.em0 + em; if (P.down && !was) toast('💀 You are down — an ally can revive you!', 1800); if (!P.down && was) toast('✚ You were revived!'); continue; }
+    if (id === NET.id) { const was = P.down; if (hp < G.flame - .5) { P.hurt = .25; shake = 5; } G.flame = hp; G.maxFlame = maxHp; P.down = !!down; P.rev = rev; P.castT = castT; P.shield = !!shield; G.embersRun = NET.em0 + em; if (P.down && !was) toast('💀 You are down — an ally can revive you!', 1800); if (!P.down && was) toast('✚ You were revived!'); continue; }
     const prev = room.others.find(o => o.id === id), X = dx_(x), Y = dy_(y);
-    others.push({ id, name: pl.name, slot: pl.slot, x: prev ? prev.x : X, y: prev ? prev.y : Y, tx: X, ty: Y, face, walk, hp, maxHp, down: !!down, castT, hue, leaves, cls, rev });
+    others.push({ id, name: pl.name, slot: pl.slot, x: prev ? prev.x : X, y: prev ? prev.y : Y, tx: X, ty: Y, face, walk, hp, maxHp, down: !!down, castT, hue, leaves, cls, rev, sigs, shield: !!shield });
   }
   room.others = others;
 }
@@ -255,12 +255,13 @@ skill = () => { if (!(NET.on && !NET.host && room && room.guest)) return _skill(
 // ---------- drawing other mages ----------
 function mates() {
   if (!NET.on || !room) return [];
-  if (NET.host) return livePeers().map(q => ({ id: q.id, name: q.name, slot: q.slot, x: q.x, y: q.y, face: q.face, walk: q.walk, castT: q.castT, hue: q.wand ? q.wand.hue : 30, leaves: q.wand ? leavesOf(q.wand) : 1, cls: q.cls, hp: q.hp, maxHp: q.maxHp, down: q.down, rev: q.rev }));
+  if (NET.host) return livePeers().map(q => ({ id: q.id, name: q.name, slot: q.slot, x: q.x, y: q.y, face: q.face, walk: q.walk, castT: q.castT, hue: q.wand ? q.wand.hue : 30, leaves: q.wand ? leavesOf(q.wand) : 1, cls: q.cls, hp: q.hp, maxHp: q.maxHp, down: q.down, rev: q.rev, sigs: sigList(q.wand), shield: q.shield }));
   return room.others;
 }
 extraEnts = () => mates().map(o => ({ y: o.y, d: () => drawMate(o) }));
 function drawMate(o) {
   const t = performance.now() / 1000;
+  drawSigils(o.x, o.y, o.sigs, t, o.shield);
   MAGE_OV = { walk: o.walk, face: o.face, castT: o.castT, fl: clamp(o.hp / o.maxHp, .2, 1), hue: o.hue, leaves: o.leaves };
   try { drawPilgrim(o.x, o.y, t, o.cls, o.down ? .45 : 1); } finally { MAGE_OV = null; }
   tag(o.x, o.y, o.name, slotCol(o.slot), o.hp / o.maxHp, o.down, o.rev);

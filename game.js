@@ -68,7 +68,7 @@ const CARDS = {
   chainmod: { t: 'mod', name: 'Chain', icon: '⛓', mana: 15, desc: 'Next spell arcs to 2 more foes.' },
   wave: { t: 'mod', name: 'Wave Path', icon: '∿', mana: 2, desc: 'Next spell weaves side to side.' },
   addmana: { t: 'mod', name: 'Add Mana', icon: '✚', mana: -30, delay: 0.1, desc: 'Refunds 30 mana. Does nothing else.' },
-  // multicasts
+  // chants (multicasts)
   double: { t: 'multi', name: 'Double Spell', icon: '⑵', mana: 0, n: 2, spread: 0.12, desc: 'Casts the next 2 spells at once.' },
   triple: { t: 'multi', name: 'Triple Spell', icon: '⑶', mana: 2, n: 3, spread: 0.12, desc: 'Casts the next 3 spells at once.' },
   quad: { t: 'multi', name: 'Quad Spell', icon: '⑷', mana: 5, n: 4, spread: 0.1, desc: 'Casts the next 4 spells at once.' },
@@ -86,6 +86,153 @@ const CARDS = {
   copy: { t: 'rare', name: 'Copy Wand', icon: '⎘', mana: 50, delay: 0.3, desc: 'RARE: also casts a bare copy of every projectile in this wand.' },
   inverted: { t: 'rare', name: 'Inverted', icon: '⇆', mana: 0, desc: 'RARE: anywhere in a wand, makes it read right→left.' },
 };
+// ---------- expansion pages (v5): 11 attacks, 11 glyphs, 11 chants, 10 triggers, 11 sigils ----------
+// rar: 1 common · 2 uncommon · 3 rare (affects reward odds). shape: crisp custom projectile drawing.
+Object.assign(CARDS, {
+  galelash: { t: 'proj', name: 'Gale Lash', icon: '〰', mana: 8, delay: 0.06, rar: 1, desc: 'Short scything gust: pierces 2 and hurls foes back.', spd: 430, dmg: 8, r: 7, life: .42, pierce: 2, knock: true, shape: 'gust', col: '#bff5d8', lt: '170,240,200', el: 'Wind' },
+  emberneedle: { t: 'proj', name: 'Ember Needle', icon: '╱', mana: 6, delay: 0.03, rar: 1, desc: 'Fast, thin and cheap; sets foes burning.', spd: 560, dmg: 5, r: 2.5, life: .9, burn: true, shape: 'needle', col: '#ff8a3a', lt: '255,130,50', el: 'Fire' },
+  tidecrescent: { t: 'proj', name: 'Tidal Crescent', icon: '◗', mana: 24, delay: 0.3, rar: 2, desc: 'Slow wave crescent: pierces everything, keeps hitting, pushes foes.', spd: 200, dmg: 9, r: 9, life: 1.8, pierce: 999, rehit: .4, drag: .5, knock: true, shape: 'crescent', col: '#5ab8ff', lt: '80,170,255', el: 'Water' },
+  stormorb: { t: 'proj', name: 'Storm Orb', icon: '⊛', mana: 32, delay: 0.35, rar: 2, desc: 'Drifting thundercloud; zaps the nearest foe every 0.4s.', spd: 90, dmg: 12, r: 7, life: 2.6, zapAura: true, shape: 'orb', col: '#fff07a', lt: '255,235,120', el: 'Lightning' },
+  shadefang: { t: 'proj', name: 'Shade Fang', icon: '◤', mana: 14, delay: 0.1, rar: 1, desc: 'Seeking shadow fang; pierces 1.', spd: 420, dmg: 11, r: 4, life: 1.4, homing: true, pierce: 1, shape: 'fang', col: '#9a6aff', lt: '150,100,255', el: 'Shadow' },
+  dawnray: { t: 'proj', name: 'Dawn Ray', icon: '┃', mana: 30, delay: 0.35, rar: 2, desc: 'Near-instant ray of light that pierces every foe in line.', spd: 1700, dmg: 14, r: 3, life: .22, pierce: 999, line: 34, shape: 'beam', col: '#fff4c0', lt: '255,240,190', el: 'Light' },
+  stonespire: { t: 'proj', name: 'Stone Spire', icon: '▲', mana: 26, delay: 0.3, rar: 2, desc: 'Heavy stone shard; erupts in a quake where it stops.', spd: 180, dmg: 12, r: 6, life: .9, expBoom: 44, shape: 'spire', col: '#c89a5a', lt: '210,160,90', el: 'Earth' },
+  hexmote: { t: 'proj', name: 'Hex Mote', icon: '⌘', mana: 9, delay: 0.08, rar: 1, desc: 'Weak drifting rune; hexed foes take +30% damage for 3s.', spd: 200, dmg: 4, r: 5, life: 2, hex: true, shape: 'rune', col: '#c07aff', lt: '190,120,255', el: 'Shadow' },
+  briarseed: { t: 'proj', name: 'Briar Seed', icon: '❦', mana: 15, delay: 0.15, rar: 1, desc: 'Poisons; bursts into 3 thorn darts on hit.', spd: 260, dmg: 8, r: 4, life: 1.4, split: true, poison: true, shape: 'seed', col: '#8ad04a', lt: '140,210,80', el: 'Earth' },
+  prismshard: { t: 'proj', name: 'Prism Shard', icon: '◇', mana: 12, delay: 0.1, rar: 2, desc: 'Bounces 5 times; +20% damage with every bounce.', spd: 360, dmg: 7, r: 4, life: 2.4, bounce: 5, bounceGrow: true, shape: 'prism', col: '#e8f4ff', lt: '220,235,255', el: 'Light' },
+  rimejavelin: { t: 'proj', name: 'Rime Javelin', icon: '⤍', mana: 20, delay: 0.2, rar: 2, desc: 'Ice javelin: pierces 2 and freezes.', spd: 520, dmg: 15, r: 3, life: 1, freeze: true, pierce: 2, line: 22, shape: 'javelin', col: '#a8e4ff', lt: '160,220,255', el: 'Water' },
+  // glyphs (modifiers): attach to the next attack page
+  echoglyph: { t: 'mod', name: 'Echo Glyph', icon: '◌', mana: 12, rar: 2, desc: 'When the spell ends, a half-strength echo of it flies on.' },
+  hexglyph: { t: 'mod', name: 'Hexing Glyph', icon: '⌬', mana: 6, rar: 1, desc: 'Hits hex foes: +30% damage taken for 3s.' },
+  gravityglyph: { t: 'mod', name: 'Gravity Glyph', icon: '◉', mana: 14, rar: 2, desc: 'The spell drags nearby foes toward it.' },
+  stormglyph: { t: 'mod', name: 'Storm Glyph', icon: 'ϟ', mana: 16, rar: 2, desc: 'The spell zaps the nearest foe every 0.4s for half damage.' },
+  siphonglyph: { t: 'mod', name: 'Siphon Glyph', icon: '⇲', mana: 6, rar: 2, desc: 'Each hit returns 4 mana to the grimoire.' },
+  ricochetglyph: { t: 'mod', name: 'Ricochet Glyph', icon: '⤮', mana: 10, rar: 1, desc: 'On its last hit, the spell redirects to another foe (twice).' },
+  longglyph: { t: 'mod', name: 'Lingering Glyph', icon: '⧖', mana: 4, rar: 1, desc: 'The spell lasts twice as long.' },
+  executeglyph: { t: 'mod', name: 'Execution Glyph', icon: '✠', mana: 10, rar: 2, desc: 'Double damage against foes under 35% health.' },
+  frenzyglyph: { t: 'mod', name: 'Frenzy Glyph', icon: '≫', mana: 3, delay: -0.12, rar: 1, desc: 'Casts much sooner, but -15% damage.' },
+  crownglyph: { t: 'mod', name: 'Crown Glyph', icon: '♛', mana: 9, rar: 2, desc: '25% chance per hit to strike for 2.5x damage.' },
+  shatterglyph: { t: 'mod', name: 'Shatter Glyph', icon: '❖', mana: 8, rar: 1, desc: 'Hitting a frozen foe shatters the ice for 2.5x damage.' },
+  // chants (multicasts): cast the next pages together
+  quintchant: { t: 'multi', name: 'Five-Fold Chant', icon: '⑸', mana: 8, rar: 2, n: 5, spread: 0.09, desc: 'Casts the next 5 pages at once in a tight fan.' },
+  hexachant: { t: 'multi', name: 'Hexagram Chant', icon: '✡', mana: 10, rar: 2, n: 6, circle: true, desc: 'Next 6 pages fire in a full circle.' },
+  flankchant: { t: 'multi', name: 'Flanking Chant', icon: '⊣', mana: 2, rar: 1, n: 2, offs: [Math.PI / 2, -Math.PI / 2], desc: 'Next 2 pages fire to your left and right.' },
+  greatfan: { t: 'multi', name: 'Great Fan Chant', icon: '⋀', mana: 3, rar: 1, n: 3, spread: 0.45, desc: 'Next 3 pages in a very wide fan.' },
+  scatterchant: { t: 'multi', name: 'Scatter Chant', icon: '⁂', mana: 2, rar: 1, n: 3, rand: 0.7, desc: 'Next 3 pages at random angles ahead.' },
+  canonchant: { t: 'multi', name: 'Canon Chant', icon: '♫', mana: 3, rar: 1, n: 2, stagger: 0.18, desc: 'Next 2 pages: the second follows 0.18s later on the same line.' },
+  volleychant: { t: 'multi', name: 'Volley Chant', icon: '⋯', mana: 6, rar: 2, n: 3, stagger: 0.09, desc: 'Next 3 pages in a rapid single-file volley.' },
+  pincerchant: { t: 'multi', name: 'Pincer Chant', icon: '⟨⟩', mana: 3, rar: 1, n: 2, side: 22, desc: 'Next 2 pages launch from either side and converge.' },
+  halochant: { t: 'multi', name: 'Halo Chant', icon: '⊚', mana: 8, rar: 2, n: 3, orbitAll: true, desc: 'Next 3 pages circle you as a halo.' },
+  starchant: { t: 'multi', name: 'Starburst Chant', icon: '✷', mana: 18, delay: 0.15, rar: 3, n: 8, circle: true, desc: 'Next 8 pages burst outward in every direction.' },
+  dupchant: { t: 'multi', name: 'Doubling Chant', icon: '⧉', mana: 10, rar: 3, n: 2, dup: true, desc: 'Casts the next page twice (one draw, two copies).' },
+  // triggers: a carrier attack whose payload is the next page drawn
+  emberrelay: { t: 'trig', name: 'Ember Relay', icon: '╱⇢', mana: 10, delay: 0.04, rar: 1, trig: 'hit', carrier: 'emberneedle', desc: 'An ember needle; casts the next page where it hits.' },
+  frostrelay: { t: 'trig', name: 'Frost Relay', icon: '❄⇢', mana: 14, delay: 0.1, rar: 1, trig: 'hit', carrier: 'ice', desc: 'A frost needle; casts the next page where it hits.' },
+  longdelay: { t: 'trig', name: 'Long Delay Dart', icon: '⧗', mana: 10, delay: 0.05, rar: 1, trig: 'timer', tdelay: 1.0, desc: 'A wind dart; casts the next page after 1s.' },
+  quickdelay: { t: 'trig', name: 'Quick Delay Dart', icon: '⏲', mana: 10, delay: 0.05, rar: 1, trig: 'timer', tdelay: 0.25, desc: 'A wind dart; casts the next page after 0.25s.' },
+  seekerrelay: { t: 'trig', name: 'Seeker Relay', icon: '◆⇢', mana: 22, delay: 0.12, rar: 2, trig: 'hit', carrier: 'missile', desc: 'A seeker star; casts the next page where it hits.' },
+  bouncerelay: { t: 'trig', name: 'Rebound Relay', icon: '◎⇢', mana: 12, delay: 0.08, rar: 1, trig: 'bounce', carrier: 'burst', desc: 'A ricochet; casts the next page at its first wall bounce.' },
+  proxrelay: { t: 'trig', name: 'Proximity Relay', icon: '⊙⇢', mana: 12, delay: 0.05, rar: 2, trig: 'near', desc: 'A wind dart; casts the next page when a foe comes within reach.' },
+  lancerelay: { t: 'trig', name: 'Spear Relay', icon: '⟶⇢', mana: 24, delay: 0.3, rar: 2, trig: 'expiry', carrier: 'lance', desc: 'A light spear; casts the next page where it fades.' },
+  minerelay: { t: 'trig', name: 'Rune Trap Relay', icon: '✇⇢', mana: 20, delay: 0.2, rar: 2, trig: 'boom', carrier: 'mine', desc: 'A rune trap; casts the next page when it detonates.' },
+  twinrelay: { t: 'trig', name: 'Twin Relay', icon: '✦⇉', mana: 16, delay: 0.05, rar: 3, trig: 'hit', twin: true, desc: 'A wind dart; casts the next page TWICE where it hits.' },
+  // sigils: passive pages, never drawn by the cast; active while in your current grimoire
+  flowsigil: { t: 'sigil', sig: 'flow', name: 'Sigil of Flowing Mana', icon: '≋', mana: 0, rar: 1, desc: 'Passive: +40% mana regeneration.' },
+  wellsigil: { t: 'sigil', sig: 'well', name: 'Sigil of the Deep Well', icon: '⊻', mana: 0, rar: 1, desc: 'Passive: +60 max mana.' },
+  aegissigil: { t: 'sigil', sig: 'aegis', name: 'Aegis Sigil', icon: '⛉', mana: 0, rar: 2, desc: 'Passive: a ward absorbs one hit, then recharges for 8s.' },
+  quicksigil: { t: 'sigil', sig: 'quick', name: 'Sigil of Quickening', icon: '⌁', mana: 0, rar: 2, desc: 'Passive: 15% shorter cast delay and recharge.' },
+  embersigil: { t: 'sigil', sig: 'ember', name: 'Ember Step Sigil', icon: '♨', mana: 0, rar: 1, desc: 'On dodge: a burst of flame where you stood (16 dmg, burns).' },
+  frostsigil: { t: 'sigil', sig: 'frost', name: 'Frost Step Sigil', icon: '❅', mana: 0, rar: 1, desc: 'On dodge: freezes foes around you.' },
+  famsigil: { t: 'sigil', sig: 'fam', name: 'Sigil of the Familiar', icon: '✧', mana: 0, rar: 2, desc: 'Always-cast: a familiar fires a wind dart every 2.2s.' },
+  thornsigil: { t: 'sigil', sig: 'thorn', name: 'Thorn Sigil', icon: '✳', mana: 0, rar: 1, desc: 'When hit, thorns deal 15 damage to foes around you.' },
+  mendsigil: { t: 'sigil', sig: 'mend', name: 'Sigil of Mending', icon: '✚', mana: 0, rar: 2, desc: 'Passive: regenerate 0.6 HP per second.' },
+  lodesigil: { t: 'sigil', sig: 'lode', name: 'Lodestone Sigil', icon: '⚲', mana: 0, rar: 1, desc: 'Passive: +12% move speed.' },
+  ruinsigil: { t: 'sigil', sig: 'ruin', name: 'Sigil of Ruin', icon: '⛧', mana: 0, rar: 3, desc: 'Passive: +15% spell damage, but -20% mana regeneration.' },
+});
+const NEW_PAGES = ['galelash', 'emberneedle', 'tidecrescent', 'stormorb', 'shadefang', 'dawnray', 'stonespire', 'hexmote', 'briarseed', 'prismshard', 'rimejavelin', 'echoglyph', 'hexglyph', 'gravityglyph', 'stormglyph', 'siphonglyph', 'ricochetglyph', 'longglyph', 'executeglyph', 'frenzyglyph', 'crownglyph', 'shatterglyph', 'quintchant', 'hexachant', 'flankchant', 'greatfan', 'scatterchant', 'canonchant', 'volleychant', 'pincerchant', 'halochant', 'starchant', 'dupchant', 'emberrelay', 'frostrelay', 'longdelay', 'quickdelay', 'seekerrelay', 'bouncerelay', 'proxrelay', 'lancerelay', 'minerelay', 'twinrelay', 'flowsigil', 'wellsigil', 'aegissigil', 'quicksigil', 'embersigil', 'frostsigil', 'famsigil', 'thornsigil', 'mendsigil', 'lodesigil', 'ruinsigil'];
+// mod overlay bits (visual + co-op sync)
+const OVB = { echoglyph: 1, hexglyph: 2, gravityglyph: 4, stormglyph: 8, siphonglyph: 16, ricochetglyph: 32, longglyph: 64, executeglyph: 128, frenzyglyph: 256, crownglyph: 512, shatterglyph: 1024 };
+// sigil helpers
+function sigN(w, k) { if (!w || !w.slots) return 0; let n = 0; for (const id of w.slots) if (id && CARDS[id].sig === k) n++; return n; }
+function sigList(w) { return w && w.slots ? [...new Set(w.slots.filter(id => id && CARDS[id].t === 'sigil').map(id => CARDS[id].sig))] : []; }
+function mmax(w) { return w.maxMana + 60 * sigN(w, 'well'); }
+function mreg(w) { return w.regen * (1 + .4 * sigN(w, 'flow')) * (sigN(w, 'ruin') ? .8 : 1); }
+function healActor(a, n) { if (a === P) { if (G) G.flame = Math.min(G.maxFlame, G.flame + n); } else if (a.hp != null) a.hp = Math.min(a.maxHp, a.hp + n); }
+function sigilTick(a, w, dt, world) {
+  if (!w || !world) return; const sg = a.sg || (a.sg = { fam: 1.2, shieldCd: 0, mendT: 0 });
+  sg.shieldCd = Math.max(0, sg.shieldCd - dt); a.shield = sigN(w, 'aegis') > 0 && sg.shieldCd <= 0;
+  const nf = sigN(w, 'fam');
+  if (nf) { sg.fam -= dt * nf; sg.famA = (sg.famA || 0) + dt * 3; if (sg.fam <= 0) { const t = nearestFoe(world, a.x, a.y); if (t) { sg.fam = 2.2; const fx0 = a.x + Math.cos(sg.famA) * 26, fy0 = a.y - 30 + Math.sin(sg.famA) * 10; const keep = world.caster; world.caster = a; spawnShot(world, { p: 'spark', mods: [] }, fx0, fy0, Math.atan2(t.y - t.r * .8 - fy0, t.x - fx0)); world.caster = keep; } else sg.fam = .3; } }
+  const nm = sigN(w, 'mend'); if (nm) { healActor(a, .6 * nm * dt); sg.mendT -= dt; if (sg.mendT <= 0 && world.parts.length < 400) { sg.mendT = .5; world.parts.push({ x: a.x + (fx() - .5) * 16, y: a.y - 20, vx: 0, vy: -30, life: .6, c: '#8aff9a', s: 2.5, cross: true }); } }
+}
+function absorbHit(a, w, world) {
+  const n = sigN(w, 'aegis'); const sg = a.sg || (a.sg = { fam: 1.2, shieldCd: 0, mendT: 0 });
+  if (!n || sg.shieldCd > 0) return false;
+  sg.shieldCd = 8 / n; a.shield = false;
+  if (world) { world.fxs.push({ type: 'ring', x: a.x, y: a.y, r: 14, R: 40, life: .35, c: '#9ad8ff' }); for (let i = 0; i < 10; i++) { const q = i / 10 * TAU; world.parts.push({ x: a.x + Math.cos(q) * 22, y: a.y - 22 + Math.sin(q) * 22, vx: Math.cos(q) * 90, vy: Math.sin(q) * 90, life: .3, c: '#cfeaff', s: 2 }); } }
+  return true;
+}
+function thornsOf(a, w, world) {
+  const n = sigN(w, 'thorn'); if (!n || !world) return;
+  world.fxs.push({ type: 'thorns', x: a.x, y: a.y, r: 70, life: .3, c: '#9ad04a' });
+  for (const f of world.foes) if (!f.dead && Math.hypot(f.x - a.x, f.y - a.y) < 70 + f.r) hurtFoe(world, f, 15 * n);
+}
+function dodgeSigils(a, w, world) {
+  if (!w || !world) return;
+  const ne = sigN(w, 'ember'), nf = sigN(w, 'frost');
+  if (ne) { world.fxs.push({ type: 'boom', x: a.x, y: a.y - 6, r: 4, R: 70, life: .32 }); for (let i = 0; i < 14; i++) { const q = fx() * TAU, v = 60 + fx() * 120; world.parts.push({ x: a.x, y: a.y - 6, vx: Math.cos(q) * v, vy: Math.sin(q) * v, life: .4, c: i % 2 ? '#ffb347' : '#ff5a1a', s: 2.5, ember: true }); } for (const f of world.foes) if (!f.dead && Math.hypot(f.x - a.x, f.y - a.y) < 75 + f.r) { hurtFoe(world, f, 16 * ne); f.burn = Math.max(f.burn, 2); } }
+  if (nf) { world.fxs.push({ type: 'frostring', x: a.x, y: a.y, r: 85, life: .45, c: '#bfe8ff' }); for (const f of world.foes) if (!f.dead && Math.hypot(f.x - a.x, f.y - a.y) < 85 + f.r) f.frozen = Math.max(f.frozen || 0, 1.4 + .4 * nf); }
+}
+// distinct aura per sigil, drawn at the mage's feet / grimoire
+function drawSigils(x, y, sigs, t, shield) {
+  if (!sigs || !sigs.length) return;
+  cx.save(); cx.lineJoin = 'round';
+  for (const k of sigs) {
+    if (k === 'aegis' && shield) { cx.strokeStyle = 'rgba(154,216,255,.55)'; cx.lineWidth = 1.2; cx.beginPath(); for (let i = 0; i <= 6; i++) { const q = i / 6 * TAU + t * .5; cx.lineTo(x + Math.cos(q) * 22, y - 26 + Math.sin(q) * 26); } cx.stroke(); cx.fillStyle = 'rgba(154,216,255,.07)'; cx.fill(); }
+    if (k === 'flow') { cx.fillStyle = '#7ab8ff'; for (let i = 0; i < 3; i++) { const q = t * 2.4 + i * TAU / 3; cx.fillRect(x + Math.cos(q) * 30 - 1, y - 46 + Math.sin(q) * 8 - 1, 2, 2); } }
+    if (k === 'well') { cx.strokeStyle = 'rgba(70,110,220,.6)'; cx.lineWidth = 1; cx.beginPath(); cx.ellipse(x, y + 1, 19, 6, 0, 0, TAU); cx.stroke(); }
+    if (k === 'quick') { cx.strokeStyle = '#e0b860'; cx.lineWidth = 1; cx.beginPath(); for (let i = 0; i < 6; i++) { const q = t * 6 + i * TAU / 6; cx.moveTo(x + Math.cos(q) * 16, y + 1 + Math.sin(q) * 5); cx.lineTo(x + Math.cos(q) * 20, y + 1 + Math.sin(q) * 6.2); } cx.stroke(); }
+    if (k === 'ember') { cx.fillStyle = '#ff7a2a'; for (let i = 0; i < 4; i++) { const q = i * TAU / 4 + .4, h = 3 + Math.sin(t * 9 + i) * 1.2, ex = x + Math.cos(q) * 13, ey = y + 1 + Math.sin(q) * 4; cx.beginPath(); cx.moveTo(ex - 1.5, ey); cx.lineTo(ex, ey - h); cx.lineTo(ex + 1.5, ey); cx.fill(); } }
+    if (k === 'frost') { cx.strokeStyle = '#cfefff'; cx.lineWidth = .8; for (let i = 0; i < 3; i++) { const q = i * TAU / 3 + 1, ex = x + Math.cos(q) * 15, ey = y + 1 + Math.sin(q) * 4.5; cx.beginPath(); for (let j = 0; j < 3; j++) { const a = j * Math.PI / 3; cx.moveTo(ex - Math.cos(a) * 2.5, ey - Math.sin(a) * 2.5); cx.lineTo(ex + Math.cos(a) * 2.5, ey + Math.sin(a) * 2.5); } cx.stroke(); } }
+    if (k === 'fam') { const q = t * 3, fx0 = x + Math.cos(q) * 26, fy0 = y - 30 + Math.sin(q) * 10; light(fx0, fy0, 16, '170,240,200', .45); glowDot(fx0, fy0, 2.2, '#ffffff', 'rgba(150,255,190,.55)'); }
+    if (k === 'thorn') { cx.fillStyle = '#5a7a2a'; for (let i = 0; i < 8; i++) { const q = i * TAU / 8, ex = x + Math.cos(q) * 17, ey = y + 1 + Math.sin(q) * 5.5; cx.beginPath(); cx.moveTo(ex - 1.2, ey); cx.lineTo(ex + Math.cos(q) * 3, ey + Math.sin(q) * 1 - 2.5); cx.lineTo(ex + 1.2, ey); cx.fill(); } }
+    if (k === 'mend') { cx.fillStyle = 'rgba(138,255,154,.75)'; const ph = (t * .8) % 1, my = y - 10 - ph * 40; cx.globalAlpha = 1 - ph; cx.fillRect(x + 10 - 1, my - 3, 2, 6); cx.fillRect(x + 10 - 3, my - 1, 6, 2); cx.globalAlpha = 1; }
+    if (k === 'lode') { cx.fillStyle = '#8a8478'; for (let i = 0; i < 3; i++) { const q = -t * 2 + i * TAU / 3; cx.fillRect(x + Math.cos(q) * 21 - 1.5, y + 1 + Math.sin(q) * 6 - 1.5, 3, 3); } }
+    if (k === 'ruin') { cx.strokeStyle = 'rgba(220,40,40,.55)'; cx.lineWidth = 1; cx.beginPath(); for (let i = 0; i <= 5; i++) { const q = -Math.PI / 2 + i * TAU * 2 / 5; cx.lineTo(x + Math.cos(q) * 13, y + 1 + Math.sin(q) * 4.2); } cx.stroke(); }
+  }
+  cx.restore();
+}
+// crisp custom projectile shapes for the expansion pages
+function drawShape(b, C, r, a) {
+  switch (C.shape) {
+    case 'gust': cx.rotate(a); cx.strokeStyle = 'rgba(200,255,225,.85)'; cx.lineWidth = 1.6; for (let i = 0; i < 3; i++) { cx.beginPath(); cx.arc(-i * 4, 0, r + 2 - i * 1.5, -1, 1); cx.stroke(); } cx.strokeStyle = '#ffffff'; cx.lineWidth = .8; cx.beginPath(); cx.arc(1, 0, r + 2, -.8, .8); cx.stroke(); break;
+    case 'needle': cx.rotate(a); cx.strokeStyle = '#a8301a'; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(-14, 0); cx.lineTo(4, 0); cx.stroke(); cx.strokeStyle = '#ffd08a'; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(-8, 0); cx.lineTo(5, 0); cx.stroke(); glowDot(5, 0, 1.6, '#fff4d0', '#ff8a3a'); break;
+    case 'crescent': cx.rotate(a); cx.fillStyle = '#1e5a9a'; cx.beginPath(); cx.arc(0, 0, r * 1.5, -1.3, 1.3); cx.arc(-r * .7, 0, r * 1.2, 1.1, -1.1, true); cx.closePath(); cx.fill(); cx.fillStyle = '#7ad0ff'; cx.beginPath(); cx.arc(0, 0, r * 1.5, -1.2, 1.2); cx.arc(-r * .3, 0, r * 1.25, 1.1, -1.1, true); cx.closePath(); cx.fill(); cx.fillStyle = '#e8f8ff'; cx.fillRect(r * 1.3, -1, 2, 2); break;
+    case 'orb': cx.fillStyle = '#2a2a3a'; cx.beginPath(); cx.arc(0, 0, r, 0, TAU); cx.fill(); cx.strokeStyle = '#fff07a'; cx.lineWidth = 1.2; cx.beginPath(); cx.arc(0, 0, r, b.spin, b.spin + 4); cx.stroke(); cx.strokeStyle = '#ffffff'; cx.lineWidth = 1; cx.beginPath(); const q = b.spin * 1.7; cx.moveTo(Math.cos(q) * r * .5, Math.sin(q) * r * .5); cx.lineTo(Math.cos(q + 2) * r * .3, Math.sin(q + 2) * r * .3); cx.lineTo(Math.cos(q + 3.5) * r * .6, Math.sin(q + 3.5) * r * .6); cx.stroke(); glowDot(0, 0, 1.5, '#ffffff', 'rgba(255,240,120,.5)'); break;
+    case 'fang': cx.rotate(a); cx.fillStyle = '#2a1440'; cx.beginPath(); cx.moveTo(r * 2.4, 0); cx.lineTo(-r, -r * 1.1); cx.lineTo(-r * .4, 0); cx.lineTo(-r, r * 1.1); cx.closePath(); cx.fill(); cx.fillStyle = '#b08aff'; cx.beginPath(); cx.moveTo(r * 2.2, 0); cx.lineTo(-r * .2, -r * .5); cx.lineTo(0, 0); cx.closePath(); cx.fill(); break;
+    case 'beam': cx.rotate(a); cx.strokeStyle = 'rgba(255,230,160,.5)'; cx.lineWidth = 5; cx.beginPath(); cx.moveTo(-C.line * 1.4, 0); cx.lineTo(4, 0); cx.stroke(); cx.strokeStyle = '#fffbe8'; cx.lineWidth = 1.6; cx.stroke(); break;
+    case 'spire': cx.rotate(a); cx.fillStyle = '#5a4026'; cx.beginPath(); cx.moveTo(r * 1.8, 0); cx.lineTo(-r * .4, -r); cx.lineTo(-r * 1.4, -r * .3); cx.lineTo(-r * 1.4, r * .5); cx.lineTo(-r * .4, r); cx.closePath(); cx.fill(); cx.fillStyle = '#c89a5a'; cx.beginPath(); cx.moveTo(r * 1.6, 0); cx.lineTo(-r * .4, -r * .8); cx.lineTo(-r * .2, 0); cx.closePath(); cx.fill(); break;
+    case 'rune': cx.rotate(b.spin * .4); cx.strokeStyle = '#c07aff'; cx.lineWidth = 1.2; cx.strokeRect(-r * .7, -r * .7, r * 1.4, r * 1.4); cx.rotate(Math.PI / 4); cx.strokeStyle = '#7a3ab0'; cx.strokeRect(-r * .7, -r * .7, r * 1.4, r * 1.4); glowDot(0, 0, 1.4, '#f0d8ff', 'rgba(190,120,255,.5)'); break;
+    case 'seed': cx.rotate(a); cx.fillStyle = '#3a5a1a'; cx.beginPath(); cx.ellipse(0, 0, r * 1.3, r * .8, 0, 0, TAU); cx.fill(); cx.fillStyle = '#8ad04a'; cx.beginPath(); cx.ellipse(r * .2, -r * .2, r * .7, r * .35, 0, 0, TAU); cx.fill(); cx.strokeStyle = '#2a3a12'; cx.lineWidth = 1; cx.beginPath(); for (let i = 0; i < 4; i++) { const q = i * Math.PI / 2 + .6; cx.moveTo(Math.cos(q) * r, Math.sin(q) * r * .7); cx.lineTo(Math.cos(q) * (r + 3), Math.sin(q) * (r * .7 + 3)); } cx.stroke(); break;
+    case 'prism': { cx.rotate(b.spin * .5); const k = 1 + Math.min(1.5, (b.grow || 0) * .25); cx.fillStyle = '#6a7a9a'; cx.beginPath(); cx.moveTo(0, -r * 1.4 * k); cx.lineTo(r * k, 0); cx.lineTo(0, r * 1.4 * k); cx.lineTo(-r * k, 0); cx.closePath(); cx.fill(); cx.fillStyle = '#e8f4ff'; cx.beginPath(); cx.moveTo(0, -r * 1.4 * k); cx.lineTo(r * k, 0); cx.lineTo(0, 0); cx.closePath(); cx.fill(); cx.fillStyle = '#ffb0e0'; cx.fillRect(-1, r * .5 * k, 2, 2); break; }
+    case 'javelin': cx.rotate(a); cx.strokeStyle = '#3a6a9a'; cx.lineWidth = 2.5; cx.beginPath(); cx.moveTo(-C.line, 0); cx.lineTo(0, 0); cx.stroke(); cx.fillStyle = '#e8f8ff'; cx.beginPath(); cx.moveTo(7, 0); cx.lineTo(-1, -3); cx.lineTo(1, 0); cx.lineTo(-1, 3); cx.closePath(); cx.fill(); cx.strokeStyle = '#bfe8ff'; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(-C.line, -2); cx.lineTo(-C.line + 4, 0); cx.lineTo(-C.line, 2); cx.stroke(); break;
+    default: glowDot(0, 0, Math.max(1.5, r * .8), '#fff6d0', b.col);
+  }
+}
+// glyph overlays: each new glyph leaves its own mark on the spell it powers
+function drawOverlays(b, r, a) {
+  const o = b.ov || 0; if (!o) return; const sp = b.spin;
+  if (o & 1) { cx.globalAlpha *= .35; cx.strokeStyle = b.col || '#fff'; cx.lineWidth = 1; cx.beginPath(); cx.arc(-Math.cos(a) * 9, -Math.sin(a) * 9, r + 1, 0, TAU); cx.stroke(); cx.globalAlpha /= .35; }
+  if (o & 2) { cx.strokeStyle = '#b06aff'; cx.lineWidth = .9; cx.beginPath(); for (let i = 0; i <= 3; i++) { const q = sp * .6 + i * TAU / 3; cx.lineTo(Math.cos(q) * (r + 5), Math.sin(q) * (r + 5)); } cx.stroke(); }
+  if (o & 4) { cx.strokeStyle = 'rgba(30,10,50,.85)'; cx.lineWidth = 1.5; for (let i = 0; i < 2; i++) { cx.beginPath(); cx.arc(0, 0, r + 7, -sp * 1.2 + i * Math.PI, -sp * 1.2 + i * Math.PI + 1.6); cx.stroke(); } }
+  if ((o & 8) && fx() < .5) { cx.strokeStyle = '#fff6a0'; cx.lineWidth = .9; const q = fx() * TAU; cx.beginPath(); cx.moveTo(Math.cos(q) * r, Math.sin(q) * r); cx.lineTo(Math.cos(q + .4) * (r + 6), Math.sin(q + .4) * (r + 6)); cx.lineTo(Math.cos(q) * (r + 10), Math.sin(q) * (r + 10)); cx.stroke(); }
+  if (o & 16) { cx.fillStyle = '#6aa8ff'; for (let i = 0; i < 2; i++) { const q = -sp * 1.5 + i * Math.PI; cx.fillRect(Math.cos(q) * (r + 5) - 1, Math.sin(q) * (r + 5) - 1, 2, 2); } }
+  if (o & 32) { cx.strokeStyle = '#e0c890'; cx.lineWidth = 1; cx.rotate(a); cx.beginPath(); cx.moveTo(-r - 6, -3); cx.lineTo(-r - 3, 0); cx.lineTo(-r - 6, 3); cx.moveTo(-r - 10, -3); cx.lineTo(-r - 7, 0); cx.lineTo(-r - 10, 3); cx.stroke(); cx.rotate(-a); }
+  if (o & 64) { cx.fillStyle = b.col || '#fff'; for (let i = 1; i <= 3; i++) { cx.globalAlpha *= .6; cx.fillRect(-Math.cos(a) * i * 6 - .8, -Math.sin(a) * i * 6 - .8, 1.6, 1.6); } cx.globalAlpha = 1; }
+  if (o & 128) { cx.strokeStyle = '#d02a2a'; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(-r - 4, 0); cx.lineTo(-r - 1, 0); cx.moveTo(r + 1, 0); cx.lineTo(r + 4, 0); cx.moveTo(0, -r - 4); cx.lineTo(0, -r - 1); cx.moveTo(0, r + 1); cx.lineTo(0, r + 4); cx.stroke(); }
+  if (o & 256) { cx.strokeStyle = 'rgba(255,220,160,.6)'; cx.lineWidth = .8; cx.rotate(a); cx.beginPath(); cx.moveTo(-r - 4, -r * .8); cx.lineTo(-r - 14, -r * .8); cx.moveTo(-r - 6, r * .8); cx.lineTo(-r - 16, r * .8); cx.stroke(); cx.rotate(-a); }
+  if (o & 512) { const k = (Math.sin(sp * 2) + 1) * 1.5 + 2; cx.fillStyle = '#ffd860'; cx.beginPath(); cx.moveTo(0, -r - k - 2); cx.lineTo(.8, -r - 2.8); cx.lineTo(k * .6, -r - 2); cx.lineTo(.8, -r - 1.2); cx.lineTo(0, -r + k * .4 - 2); cx.lineTo(-.8, -r - 1.2); cx.lineTo(-k * .6, -r - 2); cx.lineTo(-.8, -r - 2.8); cx.closePath(); cx.fill(); }
+  if (o & 1024) { cx.fillStyle = '#dff4ff'; for (let i = 0; i < 3; i++) { const q = sp * .3 + i * TAU / 3; cx.beginPath(); cx.moveTo(Math.cos(q) * (r + 2), Math.sin(q) * (r + 2)); cx.lineTo(Math.cos(q + .2) * (r + 6), Math.sin(q + .2) * (r + 6)); cx.lineTo(Math.cos(q - .2) * (r + 5), Math.sin(q - .2) * (r + 5)); cx.fill(); } }
+}
 // ---------- anime retheme: grimoire page names + element colours (mechanics unchanged) ----------
 const PAGE_THEME = {
   spark: ['Wind Dart', '#6dffb0', '110,255,170', 'Wind'], fireball: ['Blaze Orb', '#ff5a1a', '255,110,40', 'Fire'], ice: ['Frost Needle', '#8fe4ff', '140,220,255', 'Water'],
@@ -131,8 +278,9 @@ function depthOf() { return G.floor - ENDLESS_START + 1; }
 function leavesOf(w) { return clamp(w.leaves || Math.ceil(w.slots.length / 2), 1, 5); }
 function difficulty() { return 1 + G.floor * 0.5 + G.step * 0.1 + Math.max(0, G.floor - 3) * 0.15; }
 const CARD_POOL = Object.keys(CARDS).filter(k => !['bloodwax', 'copy', 'inverted'].includes(k));
+const RAR_NAME = ['', 'common', 'uncommon', 'rare'];
 const RARE_POOL = ['copy', 'inverted'];
-const TYPE_NAME = { proj: 'Attack Page', mod: 'Glyph Page', multi: 'Chant Page', trig: 'Trigger Page', curse: 'Forbidden Page', rare: 'Rare Page' };
+const TYPE_NAME = { proj: 'Attack Page', mod: 'Glyph Page', multi: 'Chant Page', trig: 'Trigger Page', curse: 'Forbidden Page', rare: 'Rare Page', sigil: 'Sigil Page' };
 
 function makeWand(o) { return Object.assign({ name: 'Wand', slots: [], delay: .25, recharge: .5, maxMana: 100, mana: 100, regen: 30, idx: 0, cd: 0, hue: 30 }, o); }
 const WAND_NAMES = ['Gale Codex', 'Ember Tome', 'Tidebound Grimoire', 'Storm Ledger', 'Umbral Folio', 'Dawn Psalter', 'Stoneleaf Book', 'Starlit Almanac'];
@@ -152,7 +300,7 @@ function starter(cls) {
 // Slots read left→right (or right→left if Inverted is anywhere in the wand). Modifiers attach to the next projectile;
 // multicasts draw the next N spells into one cast; triggers are a spark whose payload is the next spell drawn.
 function buildCast(wand) {
-  let deck = wand.slots.filter(Boolean);
+  let deck = wand.slots.filter(id => id && CARDS[id].t !== 'sigil'); const chants = [];
   if (deck.includes('inverted')) deck = deck.filter(id => id !== 'inverted').reverse();
   if (!deck.some(id => CARDS[id].t === 'proj' || CARDS[id].t === 'trig')) return null;
   let p = wand.idx >= deck.length ? 0 : wand.idx, drawn = 0, wrapped = false, mana = 0, delay = 0, flame = 0;
@@ -163,80 +311,101 @@ function buildCast(wand) {
       const c = CARDS[id];
       if (c.t === 'mod' || c.t === 'curse') { if (id !== 'addmana') mods.push(id); continue; }
       if (c.t === 'proj') return [{ p: id, mods, off: 0 }];
-      if (c.t === 'trig') return [{ p: 'spark', mods, off: 0, trig: c.trig, tcard: id, payload: one([]) }];
+      if (c.t === 'trig') return [{ p: c.carrier || 'spark', mods, off: 0, trig: c.trig, tcard: id, tdelay: c.tdelay, twin: c.twin, payload: one([]) }];
       if (c.t === 'rare') { const copies = deck.filter(d => CARDS[d].t === 'proj').map(d => ({ p: d, mods: [], off: 0, copy: true })); copies.forEach(s => mana += Math.round(CARDS[s.p].mana / 2)); return copies.concat(one(mods)); }
       if (c.t === 'multi') {
-        const g = []; for (let i = 0; i < c.n; i++) g.push(...one(mods.slice()));
-        g.forEach((s, i) => s.off += c.circle ? i * TAU / g.length : c.behind ? (i % 2) * Math.PI : (i - (g.length - 1) / 2) * c.spread);
+        chants.push(id); const g = [];
+        if (c.dup) { const o = one(mods.slice()); for (let i = 0; i < c.n; i++) g.push(...JSON.parse(JSON.stringify(o))); }
+        else for (let i = 0; i < c.n; i++) g.push(...one(mods.slice()));
+        g.forEach((s, i) => {
+          if (c.orbitAll) { s.mods = s.mods.concat('orbit'); s.off += i * TAU / g.length; return; }
+          if (c.stagger) { s.wait = (s.wait || 0) + i * c.stagger; return; }
+          if (c.side) { const k = i - (g.length - 1) / 2; s.side = k * 2 * c.side; s.off -= k * .2; return; }
+          s.off += c.offs ? c.offs[i % c.offs.length] : c.rand ? (fx() - .5) * c.rand : c.circle ? i * TAU / g.length : c.behind ? (i % 2) * Math.PI : (i - (g.length - 1) / 2) * (c.spread || 0);
+        });
         return g;
       }
     }
   }
   const shots = one([]);
   if (p >= deck.length) { p = 0; wrapped = true; }
-  return { shots, mana, delay, flame, wrapped, nextIdx: p };
+  return { shots, mana, delay, flame, wrapped, nextIdx: p, chants };
 }
 function describeCast(wand) {
   const c = buildCast(Object.assign({}, wand, { idx: 0 })); if (!c) return 'No attack page — this grimoire casts nothing.';
-  const d = s => (s.tcard ? CARDS[s.tcard].name : CARDS[s.p].name + (s.copy ? ' (copy)' : '')) + (s.mods.length ? ' [' + s.mods.map(m => CARDS[m].name).join(', ') + ']' : '') + (s.trig ? ' → (' + (s.payload.map(d).join(' + ') || 'nothing') + ')' : '');
-  return c.shots.map(d).join(' + ') + ' · ' + c.mana + ' mana';
+  const d = s => (s.tcard ? CARDS[s.tcard].name : CARDS[s.p].name + (s.copy ? ' (copy)' : '')) + (s.wait ? ' (+' + s.wait.toFixed(2) + 's)' : '') + (s.mods.length ? ' [' + s.mods.map(m => CARDS[m].name).join(', ') + ']' : '') + (s.trig ? ' → (' + (s.payload.map(d).join(' + ') || 'nothing') + ')' : '');
+  const sg = (wand.slots || []).filter(id => id && CARDS[id].t === 'sigil');
+  return c.shots.map(d).join(' + ') + ' · ' + c.mana + ' mana' + (sg.length ? ' · sigils: ' + sg.map(id => CARDS[id].name).join(', ') : '');
 }
 function tryCast(world, wand, x, y, ang, payFlame) {
   const c = buildCast(wand); if (!c || !c.shots.length) return false;
   if (c.mana > wand.mana) { wand.cd = 0.15; return false; }
   wand.mana -= c.mana; wand.idx = c.nextIdx;
   if (c.flame && payFlame) payFlame(c.flame);
-  wand.cd = Math.max(0.06, wand.delay + c.delay) + (c.wrapped ? wand.recharge : 0);
-  for (const s of c.shots) spawnShot(world, s, x, y, ang + s.off);
+  wand.cd = Math.max(0.06, (wand.delay + c.delay) * (1 - .15 * sigN(wand, 'quick')) + (c.wrapped ? wand.recharge * (1 - .15 * sigN(wand, 'quick')) : 0));
+  world.curWand = wand;
+  for (const s of c.shots) {
+    const sx = x + (s.side ? Math.cos(ang + Math.PI / 2) * s.side : 0), sy = y + (s.side ? Math.sin(ang + Math.PI / 2) * s.side : 0);
+    if (s.wait) { (world.pending || (world.pending = [])).push({ t: s.wait, s, x: sx, y: sy, ang: ang + s.off, wand, caster: world.caster }); if (world.pending.length > 40) world.pending.shift(); }
+    else spawnShot(world, s, sx, sy, ang + s.off);
+  }
+  for (const id of c.chants) { const C = CARDS[id]; world.fxs.push({ type: 'chant', x, y: y + 14, r: 14 + C.n * 2, n: C.n, life: .35, c: C.rand ? '#d8b0ff' : C.stagger ? '#ffd890' : C.circle ? '#ffb070' : '#e8d8a8' }); }
   return true;
 }
 function spawnShot(world, spec, x, y, ang) {
   const b = CARDS[spec.p], cnt = id => spec.mods.filter(q => q === id).length, m = id => cnt(id) > 0;
   let spd = b.spd * Math.pow(1.8, cnt('speed')) * Math.pow(0.7, cnt('heavy')) * Math.pow(.8, cnt('larger')) * Math.pow(1.6, cnt('smallfast'));
-  let dmg = b.dmg * Math.pow(1.8, cnt('heavy')) * Math.pow(2, cnt('bloodwax')) * Math.pow(1.3, cnt('larger')) * (world.dmgMul || 1);
+  let dmg = b.dmg * Math.pow(1.8, cnt('heavy')) * Math.pow(2, cnt('bloodwax')) * Math.pow(1.3, cnt('larger')) * Math.pow(.85, cnt('frenzyglyph')) * Math.pow(1.15, sigN(world.curWand, 'ruin')) * (world.dmgMul || 1);
   const r = b.r * Math.pow(2, cnt('larger')) * Math.pow(.5, cnt('smallfast'));
   const s = {
     kind: spec.p, x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, spd, dmg, r, el: b.el, col: m('bloodwax') ? '#ff4a5a' : b.col, lt: m('bloodwax') ? '255,60,70' : b.lt,
-    life: b.life * (m('speed') ? 0.8 : 1) + (m('bounce') ? 1 : 0) + (m('orbit') ? 1.5 : 0),
+    life: (b.life * (m('speed') ? 0.8 : 1) + (m('bounce') ? 1 : 0) + (m('orbit') ? 1.5 : 0)) * Math.pow(2, cnt('longglyph')),
     homing: b.homing || m('homing'), pierce: (b.pierce || 0) + 2 * cnt('pierce'), bounce: (b.bounce || 0) + 3 * cnt('bounce') + (m('pingpong') ? 0 : 0), trail: m('trail'), trailT: 0,
     freeze: b.freeze || m('freeze'), boom: b.boom || (m('explode') ? 40 : 0), burn: b.burn || m('trail'), chain: (b.chain || 0) + 2 * cnt('chainmod'),
-    poison: b.poison || m('poison'), knock: m('knock'), accel: m('accel'), pingpong: m('pingpong') ? 2 : 0, critburn: m('critburn'), lifesteal: m('lifesteal'), wave: m('wave'), split: m('split') && !spec.nosplit,
+    poison: b.poison || m('poison'), knock: b.knock || m('knock'), accel: m('accel'), pingpong: m('pingpong') ? 2 : 0, critburn: m('critburn'), lifesteal: m('lifesteal'), wave: m('wave'), split: (b.split || m('split')) && !spec.nosplit, echo: m('echoglyph') && !spec.noecho, hex: b.hex || m('hexglyph'), pull: b.pull || m('gravityglyph'), zap: b.zapAura || m('stormglyph'), zt: .4, siphon: m('siphonglyph'), redirect: 2 * cnt('ricochetglyph'), execute: m('executeglyph'), crown: m('crownglyph'), shatter: m('shatterglyph'), wand: world.curWand, tdelay: spec.tdelay, twin: spec.twin, spec,
     rehit: b.rehit || 0, rht: b.rehit || 0, trig: spec.trig, payload: spec.payload, age: 0, hit: [], spin: fx() * TAU, ang,
   };
+  s.ov = 0; for (const q of spec.mods) if (OVB[q]) s.ov |= OVB[q];
   if (s.accel) { s.spd *= .35; s.vx *= .35; s.vy *= .35; }
   const caster = world.caster || { x, y };
   if (b.meteor) { const t = nearestFoe(world, x, y); const tx = t ? t.x : x + Math.cos(ang) * 160, ty = t ? t.y : y + Math.sin(ang) * 160; s.x = tx + 30; s.y = ty - 240; s.groundY = ty; const l = Math.hypot(-30, 240); s.vx = -30 / l * spd; s.vy = 240 / l * spd; s.tx = tx; s.ty = ty; }
   if (b.nova) { s.x = caster.x; s.y = caster.y - 10; s.vx = s.vy = 0; s.novaR = 4; s.novaMax = b.nova * (r / b.r); s.pierce = 999; }
   if (b.guard || m('orbit')) { s.orbit = { c: caster, a: ang, rad: b.guard ? 42 : 48 + fx() * 6 }; }
-  world.shots.push(s);
+  if (world.shots.length < 220) world.shots.push(s); // hard cap on live spells (perf)
   return s;
 }
 function releasePayload(world, s, avoid, noRehit) {
   if (!s.payload || !s.payload.length || s.released) return; s.released = true;
   const t = nearestFoe(world, s.x, s.y, avoid ? [avoid] : null);
   const a = t ? Math.atan2(t.y - t.r * .8 - s.y, t.x - s.x) : Math.atan2(s.vy, s.vx);
-  const keep = world.caster; world.caster = { x: s.x, y: s.y + 10 }; // novas/orbits from a payload centre on the impact point
-  for (const p of s.payload) { const n = spawnShot(world, p, s.x, s.y, a + p.off); if (noRehit) n.hit.push(avoid); }
-  world.caster = keep;
+  const keep = world.caster, kw = world.curWand; world.caster = { x: s.x, y: s.y + 10 }; world.curWand = s.wand || kw; // novas/orbits from a payload centre on the impact point
+  for (const tw of s.twin ? [-.25, .25] : [0]) for (const p of s.payload) { const n = spawnShot(world, p, s.x, s.y, a + p.off + tw); if (noRehit) n.hit.push(avoid); }
+  world.caster = keep; world.curWand = kw;
   world.fxs.push({ type: 'ring', x: s.x, y: s.y + 10, r: 2, R: 16, life: .2, c: '#7dff7a' });
 }
 function nearestFoe(world, x, y, skip) { let b = null, bd = 1e9; for (const f of world.foes) { if (f.dead || f.spawnT > 0 || (skip && skip.includes(f))) continue; const d = Math.hypot(f.x - x, f.y - y); if (d < bd) { bd = d; b = f; } } return b; }
 function explode(world, x, y, R, dmg) { if (world === room) { sfx(x, y - R * .6, R > 60 ? 'KA-BOOM!' : 'BOOM!', '#ffb02a', R > 60 ? 22 : 16); if (R > 60) impact(.06); } world.fxs.push({ type: 'boom', x, y, r: 4, R, life: .32 }); for (let i = 0; i < 18; i++) { const a = fx() * TAU, v = 80 + fx() * 140; world.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: .3 + fx() * .3, c: i % 3 ? '#ffb347' : '#ff5a1a', s: 2 + fx() * 2, ember: true }); } for (const f of world.foes) if (!f.dead && Math.hypot(f.x - x, f.y - f.r * .6 - y) < R + f.r) hurtFoe(world, f, dmg); }
 function onHit(world, s, f) {
-  let dmg = s.dmg * (s.critburn && f.burn > 0 ? 3 : 1) * (s.accel ? clamp(s.spd / 300, .6, 2.2) : 1);
+  let dmg = s.dmg * (s.critburn && f.burn > 0 ? 3 : 1) * (s.accel ? clamp(s.spd / 300, .6, 2.2) : 1) * (s.execute && f.hp / f.max < .35 ? 2 : 1);
+  if (s.shatter && f.frozen > 0) { dmg *= 2.5; f.frozen = 0; world.fxs.push({ type: 'frostring', x: f.x, y: f.y, r: f.r + 12, life: .25, c: '#dff4ff' }); }
+  if (s.crown && fx() < .25) { dmg *= 2.5; world.fxs.push({ type: 'ring', x: f.x, y: f.y - f.r, r: 4, R: f.r + 14, life: .25, c: '#ffd860' }); }
   if (s.critburn && f.burn > 0) world.fxs.push({ type: 'sfx', x: f.x, y: f.y - f.r * 2.2, txt: 'CRIT!', col: '#ff5a1a', size: 14, life: .6, rot: -.2 });
   const k = s.knock ? .9 : .12, killed = hurtFoe(world, f, dmg, s.vx * k, s.vy * k);
   if (s.lifesteal && world.onHeal) world.onHeal(dmg * .15);
-  if (s.freeze) f.frozen = 1.6; if (s.burn) f.burn = Math.max(f.burn, 2.2); if (s.poison) f.poison = 3;
+  if (s.freeze) f.frozen = 1.6; if (s.burn) f.burn = Math.max(f.burn, 2.2); if (s.poison) f.poison = 3; if (s.hex) f.hex = 3;
+  if (s.siphon && s.wand) s.wand.mana = Math.min(mmax(s.wand), s.wand.mana + 4);
   if (s.boom) explode(world, s.x, s.y, s.boom, s.dmg * .7);
   if (s.chain) { let from = f, hitL = [f]; for (let q = 0; q < s.chain; q++) { const n = nearestFoe(world, from.x, from.y, hitL); if (!n || Math.hypot(n.x - from.x, n.y - from.y) > 170) break; world.fxs.push({ type: 'bolt', x: from.x, y: from.y, x2: n.x, y2: n.y, life: .18 }); if (q === 0 && world === room && fx() < .4) sfx(n.x, n.y - 30, 'ZAP!', '#ffe84a', 13); hurtFoe(world, n, s.dmg * .8); hitL.push(n); from = n; } }
   if (s.split) { const a = Math.atan2(s.vy, s.vx); for (let i = -1; i <= 1; i++) { const c = spawnShot(world, { p: 'spark', mods: [], nosplit: true }, s.x, s.y, a + Math.PI + i * .7); c.dmg *= .5; c.hit.push(f); } }
   if (s.trig === 'hit') releasePayload(world, s, f);
   if (s.trig === 'death' && killed) { s.x = f.x; s.y = f.y - f.r; releasePayload(world, s, f, true); }
-  if (s.pierce > 0) s.pierce--; else s.life = 0;
+  if (s.pierce > 0) s.pierce--;
+  else if (s.redirect > 0) { const n = nearestFoe(world, s.x, s.y, s.hit); if (n && Math.hypot(n.x - s.x, n.y - s.y) < 220) { s.redirect--; const q = Math.atan2(n.y - n.r * .8 - s.y, n.x - s.x), sp = Math.hypot(s.vx, s.vy) || s.spd; s.vx = Math.cos(q) * sp; s.vy = Math.sin(q) * sp; s.life = Math.max(s.life, .6); } else s.life = 0; }
+  else s.life = 0;
 }
 function updateShots(world, dt) {
   const A = world.bounds;
+  if (world.pending && world.pending.length) { const kc = world.caster, kw = world.curWand; for (const q of world.pending) { q.t -= dt; if (q.t <= 0) { world.caster = q.caster || kc; world.curWand = q.wand; spawnShot(world, q.s, q.x, q.y, q.ang); } } world.caster = kc; world.curWand = kw; world.pending = world.pending.filter(q => q.t > 0); }
   for (const s of world.shots) {
     s.age += dt; s.life -= dt; s.spin += dt * 14;
     if (s.rehit && (s.rht -= dt) <= 0) { s.rht = s.rehit; s.hit.length = 0; }
@@ -252,17 +421,19 @@ function updateShots(world, dt) {
       if (CARDS[s.kind].wobble) { s.vx += Math.cos(s.age * 9) * 60 * dt; s.vy += Math.sin(s.age * 7) * 60 * dt; }
       s.x += s.vx * dt; s.y += s.vy * dt;
       if (!s.groundY) {
-        if (s.x < A.x0 || s.x > A.x1) { if (s.bounce > 0) { s.bounce--; s.vx *= -1; s.x = clamp(s.x, A.x0, A.x1); } else s.life = 0; }
-        if (s.y < A.y0 - 20 || s.y > A.y1) { if (s.bounce > 0) { s.bounce--; s.vy *= -1; s.y = clamp(s.y, A.y0 - 20, A.y1); } else s.life = 0; }
+        if (s.x < A.x0 || s.x > A.x1) { if (s.bounce > 0) { s.bounce--; s.vx *= -1; s.x = clamp(s.x, A.x0, A.x1); bounced(world, s); } else s.life = 0; }
+        if (s.y < A.y0 - 20 || s.y > A.y1) { if (s.bounce > 0) { s.bounce--; s.vy *= -1; s.y = clamp(s.y, A.y0 - 20, A.y1); bounced(world, s); } else s.life = 0; }
       }
     }
     if (s.trail && (s.trailT -= dt) <= 0) { s.trailT = 0.05; world.patches.push({ x: s.x, y: s.y + 8, life: 1.3, kind: 'fire' }); }
-    if (fx() < .5) world.parts.push({ x: s.x, y: s.y, vx: (fx() - .5) * 30, vy: (fx() - .5) * 30, life: .22, c: s.col, s: 2 });
-    if (CARDS[s.kind].pull) for (const f of world.foes) { if (f.boss || f.dummy || f.dead) continue; const dx = s.x - f.x, dy = s.y - f.y, d = Math.hypot(dx, dy) || 1; if (d < 110) { f.x += dx / d * 120 * dt; f.y += dy / d * 120 * dt; } }
+    if (fx() < .5 && world.parts.length < 350) world.parts.push({ x: s.x, y: s.y, vx: (fx() - .5) * 30, vy: (fx() - .5) * 30, life: .22, c: s.col, s: 2 });
+    if (s.zap && (s.zt -= dt) <= 0) { s.zt = .4; const t = nearestFoe(world, s.x, s.y); if (t && Math.hypot(t.x - s.x, t.y - s.y) < 120) { world.fxs.push({ type: 'bolt', x: s.x, y: s.y + 12, x2: t.x, y2: t.y, life: .14 }); hurtFoe(world, t, s.dmg * .5); } }
+    if (s.trig === 'near' && !s.released) { const t = nearestFoe(world, s.x, s.y); if (t && Math.hypot(t.x - s.x, t.y - t.r * .8 - s.y) < 55 + t.r) { releasePayload(world, s, t); s.life = 0; } }
+    if (s.pull) for (const f of world.foes) { if (f.boss || f.dummy || f.dead) continue; const dx = s.x - f.x, dy = s.y - f.y, d = Math.hypot(dx, dy) || 1; if (d < 110) { f.x += dx / d * 120 * dt; f.y += dy / d * 120 * dt; } }
     if (s.groundY !== undefined) { if (s.y >= s.groundY) { s.y = s.groundY; explode(world, s.x, s.y - 6, s.boom, s.dmg); shake = Math.max(shake, 6); s.life = 0; } continue; }
     if (s.novaR !== undefined) { for (const f of world.foes) if (!f.dead && !s.hit.includes(f) && Math.abs(Math.hypot(f.x - s.x, f.y - f.r * .6 - s.y) - s.novaR) < f.r + 8) { s.hit.push(f); onHit(world, s, f); s.life = Math.max(s.life, .01); s.pierce = 999; } continue; }
-    if (CARDS[s.kind].mine) { if (s.age > .4) for (const f of world.foes) if (!f.dead && Math.hypot(f.x - s.x, f.y - f.r * .5 - s.y) < 34 + f.r) { explode(world, s.x, s.y, s.boom, s.dmg); s.life = 0; break; } continue; }
-    if (s.trig === 'timer' && s.age > .5) { releasePayload(world, s); s.life = 0; }
+    if (CARDS[s.kind].mine) { if (s.age > .4) for (const f of world.foes) if (!f.dead && Math.hypot(f.x - s.x, f.y - f.r * .5 - s.y) < 34 + f.r) { explode(world, s.x, s.y, s.boom, s.dmg); if (s.trig === 'boom') releasePayload(world, s, f); s.life = 0; break; } continue; }
+    if (s.trig === 'timer' && (s.age > (s.tdelay || .5) || s.age + 1 / 60 >= s.life)) { releasePayload(world, s); s.life = 0; }
     for (const f of world.foes) {
       if (f.dead || f.spawnT > 0 || s.hit.includes(f) || s.life <= 0) continue;
       if (Math.hypot(f.x - s.x, f.y - s.y - f.r * .8) > f.r + s.r + 4) continue;
@@ -270,6 +441,8 @@ function updateShots(world, dt) {
     }
     if (s.life <= 0) {
       if (s.trig === 'hit' || s.trig === 'expiry') releasePayload(world, s);
+      if (CARDS[s.kind].expBoom) { explode(world, s.x, s.y, CARDS[s.kind].expBoom, s.dmg); world.fxs.push({ type: 'quake', x: s.x, y: s.y, r: CARDS[s.kind].expBoom, life: .35, c: '#c89a5a' }); }
+      if (s.echo && world.shots.length < 200) { const kw = world.curWand; world.curWand = s.wand; const e = spawnShot(world, Object.assign({}, s.spec, { noecho: true, trig: null, payload: null }), s.x, s.y, Math.atan2(s.vy, s.vx) || s.ang); e.dmg = s.dmg * .5; e.ov |= 1; world.curWand = kw; }
       if (CARDS[s.kind].acid) for (let i = 0; i < 4; i++) world.patches.push({ x: s.x + (fx() - .5) * 26, y: s.y + 6 + (fx() - .5) * 10, life: 2.5, kind: 'acid' });
     }
   }
@@ -278,13 +451,16 @@ function updateShots(world, dt) {
   for (const p of world.patches) { p.life -= dt; for (const f of world.foes) if (!f.dead && Math.hypot(f.x - p.x, f.y - p.y) < 14 + f.r * .5) { if (p.kind === 'acid') f.poison = Math.max(f.poison || 0, 1); else f.burn = Math.max(f.burn, 1); } }
   world.patches = world.patches.filter(p => p.life > 0); if (world.patches.length > 220) world.patches.splice(0, world.patches.length - 220);
 }
+function bounced(world, s) { if (CARDS[s.kind].bounceGrow) { s.dmg *= 1.2; s.grow = (s.grow || 0) + 1; } if (s.trig === 'bounce') { releasePayload(world, s); } }
 function tickStatus(world, f, dt) {
   if (f.burn > 0) { f.burn -= dt; hurtTick(world, f, 6 * dt); if (fx() < .3) world.parts.push({ x: f.x + (fx() - .5) * f.r, y: f.y - f.r * .5, vx: 0, vy: -40, life: .4, c: '#ff7a1a', s: 2, ember: true }); }
   if (f.poison > 0) { f.poison -= dt; hurtTick(world, f, 5 * dt); }
+  if (f.hex > 0) f.hex -= dt;
 }
 function hurtTick(world, f, d) { f.hp -= d; f.dmgTaken = (f.dmgTaken || 0) + d; if (world.onDmg) world.onDmg(f, d); if (f.hp <= 0 && !f.dead) { if (f.dummy) f.hp = f.max; else killFoe(world, f); } }
 function hurtFoe(world, f, dmg, kx = 0, ky = 0) {
   if (f.dead) return false;
+  if (f.hex > 0) dmg *= 1.3;
   f.hp -= dmg; f.hit = 0.12; f.dmgTaken = (f.dmgTaken || 0) + dmg; if (!f.boss && !f.dummy) { f.kx += kx; f.ky += ky; }
   for (let i = 0; i < 3; i++) world.parts.push({ x: f.x, y: f.y - f.r, vx: (fx() - .5) * 160, vy: (fx() - .5) * 160, life: .35, c: '#9a8a6a', s: 2 });
   if (world.onDmg) world.onDmg(f, dmg);
@@ -349,7 +525,7 @@ function closeUI() { stopPreview(); UI.innerHTML = ''; }
 function on(id, f) { const e = document.getElementById(id); if (e) e.onclick = f; }
 const SHORT = { critburn: 'Crit on Burn', smallfast: 'Small+Fast', trigger: 'Trigger Bolt', behind: 'Behind+Fwd', blackhole: 'Black Hole', sickle: 'Sickle', bolt: 'Lightning', missile: 'Missile', chain: 'Chain Ltng', burst: 'Bounce Burst', skull: 'Grave Skull', explode: 'Explode', freeze: 'Freeze', wisp: 'Wisp', deathtrig: 'Death Trig', expiry: 'Expiry Trig', lifesteal: 'Lifesteal', knock: 'Knockback' };
 const cardChip = (id, extra = '') => id ? `<div class="chip t-${CARDS[id].t}" data-card="${id}" title="${CARDS[id].name}" ${extra}><i>${CARDS[id].icon}</i><u>${SHORT[id] || CARDS[id].name}</u></div>` : '';
-function cardRow(id, attrs = '', label) { const c = CARDS[id]; return `<button class="card t-${c.t}" ${attrs}><span class="ic">${c.icon}</span><div><b>${label || c.name}</b><span><em>${TYPE_NAME[c.t]}</em> · ${c.mana ? c.mana + ' mana · ' : ''}${c.desc}</span></div></button>`; }
+function cardRow(id, attrs = '', label) { const c = CARDS[id]; return `<button class="card t-${c.t}" ${attrs}><span class="ic">${c.icon}</span><div><b>${label || c.name}</b><span><em>${TYPE_NAME[c.t]}</em>${(c.rar || 1) > 1 ? ' · ' + RAR_NAME[c.rar] : ''} · ${c.mana ? c.mana + ' mana · ' : ''}${c.desc}</span></div></button>`; }
 function wandRow(w, attrs = '', label) { return `<button class="card t-wand" ${attrs}><span class="ic">📖</span><div><b>${label || w.name}</b><span>${w.slots.length} slots · delay ${w.delay}s · recharge ${w.recharge}s · mana ${w.maxMana} (+${w.regen}/s)${w.slots.some(Boolean) ? ' · holds ' + w.slots.filter(Boolean).map(i => CARDS[i].name).join(', ') : ''}</span></div></button>`; }
 
 function showCamp() {
@@ -418,7 +594,8 @@ function victory() {
 }
 
 
-function cardChoices(n, cursed) { const out = []; while (out.length < n) { const id = cursed && rng() < .25 ? 'bloodwax' : rng() < (cursed ? .1 : .04) ? pick(RARE_POOL) : pick(CARD_POOL); if (!out.includes(id)) out.push(id); } return out; }
+function rollPage() { for (let k = 0; k < 6; k++) { const id = pick(CARD_POOL), r = CARDS[id].rar || 1; if (r === 1 || (r === 2 && rng() < .55) || (r === 3 && rng() < .25)) return id; } return pick(CARD_POOL); }
+function cardChoices(n, cursed) { const out = []; while (out.length < n) { const id = cursed && rng() < .25 ? 'bloodwax' : rng() < (cursed ? .1 : .04) ? pick(RARE_POOL) : rollPage(); if (!out.includes(id)) out.push(id); } return out; }
 function bagAdd(id) { const i = G.bag.indexOf(null); if (i >= 0) { G.bag[i] = id; return true; } return false; }
 function reward(title, wandChance) {
   mode = 'pick'; HUD.classList.add('hidden');
@@ -493,14 +670,14 @@ function editor(back) {
   const w = G.wands[edWand];
   panel(`<h2>📖 Grimoire</h2>
   ${G.wands.length > 1 ? `<div class="tabs">${G.wands.map((x, i) => `<button class="tab ${i === edWand ? 'on' : ''}" id="wt${i}">${x.name}</button>`).join('')}</div>` : `<p class="small">${w.name}</p>`}
-  <p class="small">delay ${w.delay}s · recharge ${w.recharge}s · mana ${w.maxMana} (+${w.regen}/s) · ${w.slots.length} slots</p>
+  <p class="small">delay ${w.delay}s · recharge ${w.recharge}s · mana ${mmax(w)} (+${Math.round(mreg(w))}/s) · ${w.slots.length} slots</p>
   <div class="slots wand" id="wslots">${w.slots.map((id, i) => `<div class="slot" data-loc="w:${i}">${cardChip(id)}</div>`).join('')}</div>
   <canvas id="pv" width="300" height="120"></canvas>
   <p class="cast" id="castDesc">${describeCast(w)}</p>
   <p class="small">Satchel</p>
   <div class="slots bag" id="bslots">${G.bag.map((id, i) => `<div class="slot" data-loc="b:${i}">${cardChip(id)}</div>`).join('')}</div>
-  <p class="info" id="info">Drag pages between your satchel and grimoire (or tap one, then a slot). Read left→right: glyphs power up the next attack; chants cast the next N pages together.</p>
-  <div class="legend"><span class="t-proj">Attack</span><span class="t-mod">Glyph</span><span class="t-multi">Chant</span><span class="t-trig">Trigger</span><span class="t-curse">Forbidden</span><span class="t-rare">Rare</span></div>
+  <p class="info" id="info">Drag pages between your satchel and grimoire (or tap one, then a slot). Read left→right: glyphs power up the next attack; chants cast the next N pages together; sigils are passive and never cast.</p>
+  <div class="legend"><span class="t-proj">Attack</span><span class="t-mod">Glyph</span><span class="t-multi">Chant</span><span class="t-trig">Trigger</span><span class="t-curse">Forbidden</span><span class="t-rare">Rare</span><span class="t-sigil">Sigil</span></div>
   <button class="btn" id="done">Done</button>`, 'wide');
   G.wands.forEach((x, i) => on('wt' + i, () => { edWand = i; edSel = null; editor(); }));
   on('done', () => { saveRun(); const b = edBack; edBack = null; edSel = null; b(); });
@@ -540,14 +717,14 @@ function startPreview(w) {
   const pd = Math.min(3, devicePixelRatio || 1); c.width = 300 * pd; c.height = 120 * pd;
   const dummy = { type: 'husk', dummy: true, x: 250, y: 85, hp: 20, max: 20, spd: 0, r: 14, dmg: 0, burn: 0, poison: 0, hit: 0, t: 0, kx: 0, ky: 0, spawnT: 0, frozen: 0 };
   preview = { canvas: c, ctx: c.getContext('2d'), pd, wand: JSON.parse(JSON.stringify(w)), world: { caster: { x: 34, y: 82 }, bounds: { x0: 0, y0: 20, x1: 300, y1: 120 }, foes: [dummy], shots: [], parts: [], fxs: [], patches: [], dmgMul: 1, onDmg: (f, d) => preview.dps.push({ t: preview.t, d }) }, dummy, t: 0, dps: [] };
-  preview.wand.idx = 0; preview.wand.cd = 0.3; preview.wand.mana = preview.wand.maxMana;
+  preview.wand.idx = 0; preview.wand.cd = 0.3; preview.wand.mana = mmax(preview.wand); preview.actor = { x: 34, y: 96 };
 }
 function stopPreview() { preview = null; }
 function tickPreview(dt, t) {
   const pv = preview; if (!pv || !document.body.contains(pv.canvas)) { preview = null; return; }
   pv.t += dt; const wd = pv.world, d = pv.dummy, wn = pv.wand;
   d.t += dt; d.y = 74 + Math.sin(pv.t * 1.6) * 28; d.hit = Math.max(0, d.hit - dt); tickStatus(wd, d, dt); d.frozen = Math.max(0, (d.frozen || 0) - dt);
-  wn.mana = Math.min(wn.maxMana, wn.mana + wn.regen * dt); wn.cd -= dt;
+  wn.mana = Math.min(mmax(wn), wn.mana + mreg(wn) * dt); wn.cd -= dt; sigilTick(pv.actor, wn, dt, wd);
   if (wn.cd <= 0) { const a = Math.atan2(d.y - d.r * .8 - 70, d.x - 34); tryCast(wd, wn, 34, 70, a, null); }
   updateShots(wd, dt);
   for (const p of wd.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; } wd.parts = wd.parts.filter(p => p.life > 0);
@@ -560,7 +737,7 @@ function tickPreview(dt, t) {
   light(34, 70, 40, '255,150,60', .8); glowDot(34, 70, 4, '#fff0c0', 'rgba(255,150,60,.45)');
   drawShots(wd); drawFx(wd);
   g.fillStyle = '#d6b98c'; g.font = '11px Georgia'; g.textBaseline = 'top';
-  g.fillText('Training dummy · DPS ≈ ' + Math.round(pv.dps.reduce((s, e) => s + e.d, 0) / 3) + ' · mana ' + Math.floor(wn.mana) + '/' + wn.maxMana, 6, 4);
+  g.fillText('Training dummy · DPS ≈ ' + Math.round(pv.dps.reduce((s, e) => s + e.d, 0) / 3) + ' · mana ' + Math.floor(wn.mana) + '/' + mmax(wn), 6, 4); drawSigils(34, 96, sigList(wn), t, pv.actor.shield);
   cx = mainCx;
 }
 
@@ -576,7 +753,7 @@ function startRoom(kind) {
   mode = 'room'; paused = false; closeUI(); HUD.classList.remove('hidden');
   const A = arena(); if (!bg) buildBG();
   room = { kind, t: 0, bounds: A, foes: [], shots: [], eshots: [], parts: [], drops: [], fxs: [], patches: [], wisps: [], waves: [], done: false, doneT: 0, caster: P, onHeal: n => { G.flame = Math.min(G.maxFlame, G.flame + n); } };
-  for (const w of G.wands) { w.mana = w.maxMana; w.idx = 0; w.cd = 0.4; }
+  for (const w of G.wands) { w.mana = mmax(w); w.idx = 0; w.cd = 0.4; } P.sg = null;
   P.x = (A.x0 + A.x1) / 2; P.y = A.y1 - 60; P.vx = P.vy = 0; P.inv = 1; P.dodgeT = 0; P.skillCd = 0; P.dodgeCd = 0; P.down = false;
   const leg = curse('legion') ? 1.4 : 1;
   if (kind === 'boss') { spawn('warden', (A.x0 + A.x1) / 2, A.y0 + 100, difficulty()); room.boss = true; impact(.12); sfx(W / 2, H * .35, biome().boss.toUpperCase() + '!', '#ffffff', 22); }
@@ -606,14 +783,15 @@ function killFoe(world, f) {
 }
 function hurtPlayer(d) {
   if (P.inv > 0 || P.dodgeT > 0 || P.down || mode !== 'room') return;
-  G.flame -= d; P.inv = 0.7; P.hurt = 0.25; shake = 6;
+  if (absorbHit(P, wand(), room)) { P.inv = .5; return; }
+  G.flame -= d; P.inv = 0.7; P.hurt = 0.25; shake = 6; thornsOf(P, wand(), room);
   if (G.flame <= 0) { G.flame = 0; onZeroHp(); }
 }
 function payFlame(n) { G.flame -= n; if (G.flame <= 1) G.flame = 1; } // bloodwax can't kill you outright
 function dodge() {
   if (mode !== 'room' || P.dodgeCd > 0 || paused) return;
   let dx = input.dx, dy = input.dy; if (!dx && !dy) { dx = Math.cos(P.face); dy = Math.sin(P.face); }
-  const l = Math.hypot(dx, dy) || 1; P.vx = dx / l * 520; P.vy = dy / l * 520; P.dodgeT = 0.22; P.dodgeCd = 1.3; speedT = .22; speedAng = Math.atan2(dy, dx); sfx(P.x, P.y - 50, 'WHOOSH!', '#bff2ff', 13);
+  const l = Math.hypot(dx, dy) || 1; P.vx = dx / l * 520; P.vy = dy / l * 520; P.dodgeT = 0.22; P.dodgeCd = 1.3; speedT = .22; dodgeSigils(P, wand(), room); speedAng = Math.atan2(dy, dx); sfx(P.x, P.y - 50, 'WHOOSH!', '#bff2ff', 13);
 }
 function skill() {
   if (mode !== 'room' || P.skillCd > 0 || paused) return;
@@ -644,13 +822,14 @@ function update(dt) {
   if (paused) return;
   const A = arena(); room.bounds = A; room.t += dt;
   P.inv = Math.max(0, P.inv - dt); P.hurt = Math.max(0, P.hurt - dt); P.dodgeCd = Math.max(0, P.dodgeCd - dt); P.skillCd = Math.max(0, P.skillCd - dt);
-  const spd = CLASSES[G.cls].speed;
+  const spd = CLASSES[G.cls].speed * (1 + .12 * sigN(wand(), 'lode'));
   if (P.dodgeT > 0) { P.dodgeT -= dt; room.parts.push({ x: P.x, y: P.y - 8, vx: 0, vy: 0, life: .25, c: '#ff8a2a55', s: 9 }); }
   else if (mode === 'room' && !P.down) { let dx = input.dx, dy = input.dy; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } P.vx = dx * spd; P.vy = dy * spd; if (l > .1) P.walk += dt * 10; }
   else P.vx = P.vy = 0;
   P.x = clamp(P.x + P.vx * dt, A.x0 + P.r, A.x1 - P.r); P.y = clamp(P.y + P.vy * dt, A.y0 + P.r + 10, A.y1 - P.r);
   // wands: all regen mana, active one casts automatically at nearest foe
-  for (const w of G.wands) { w.mana = Math.min(w.maxMana, w.mana + w.regen * dt); w.cd -= dt; }
+  for (const w of G.wands) { w.mana = Math.min(mmax(w), w.mana + mreg(w) * dt); w.cd -= dt; }
+  if (!P.down) sigilTick(P, wand(), dt, room);
   const w = wand(), t = nearestFoe(room, P.x, P.y);
   if (t) P.face = Math.atan2(t.y - P.y, t.x - P.x); else if (Math.hypot(P.vx, P.vy) > 1) P.face = Math.atan2(P.vy, P.vx);
   P.castT = Math.max(0, (P.castT || 0) - dt);
@@ -760,7 +939,7 @@ function drawShots(wd) {
       case 'nova': cx.lineWidth = 4; cx.strokeStyle = `rgba(255,150,50,${Math.min(1, b.life * 4)})`; cx.beginPath(); cx.arc(0, 0, b.novaR, 0, TAU); cx.stroke(); cx.lineWidth = 1.5; cx.strokeStyle = `rgba(255,240,180,${Math.min(1, b.life * 4)})`; cx.stroke(); break;
       case 'sickle': cx.rotate(b.spin); cx.fillStyle = '#d8d0b8'; cx.beginPath(); cx.arc(0, 0, r * 1.5, 0, Math.PI * 1.3); cx.arc(r * .4, -r * .2, r * 1.1, Math.PI * 1.3, 0, true); cx.closePath(); cx.fill(); cx.fillStyle = '#6a4a2a'; cx.fillRect(-1.5, -1.5, 3, 3); break;
       case 'mine': cx.fillStyle = '#2a2420'; cx.beginPath(); cx.arc(0, 0, r + 1, 0, TAU); cx.fill(); cx.strokeStyle = '#6a5a4a'; cx.lineWidth = 1.5; cx.stroke(); for (let i = 0; i < 4; i++) { const aa = i * TAU / 4; cx.fillStyle = '#6a5a4a'; cx.fillRect(Math.cos(aa) * (r + 2) - 1, Math.sin(aa) * (r + 2) - 1, 2, 2); } cx.fillStyle = b.age > .4 && Math.sin(b.age * 14) > 0 ? '#ff3a2a' : '#5a1a14'; cx.fillRect(-1.5, -1.5, 3, 3); break;
-      default: glowDot(0, 0, Math.max(1.5, r * .8), '#fff6d0', b.col); // spark
+      default: if (CARDS[b.kind] && CARDS[b.kind].shape) drawShape(b, CARDS[b.kind], r, a); else glowDot(0, 0, Math.max(1.5, r * .8), '#fff6d0', b.col); // spark
     }
     if (b.el && b.kind !== 'nova') { // elemental accent: crisp, grounded
       const sp = b.spin + b.age * 9;
@@ -775,6 +954,7 @@ function drawShots(wd) {
         case 'Poison': if (fx() < .25) wd.parts.push({ x, y, vx: (fx() - .5) * 12, vy: 10, life: .35, c: '#6ad02a', s: 2 }); break;
       }
     }
+    if (b.ov) drawOverlays(b, r, a);
     if (b.trig) { cx.strokeStyle = '#4fd46a'; cx.lineWidth = 1.5; cx.setLineDash([2, 2]); cx.beginPath(); cx.arc(0, 0, r + 4, 0, TAU); cx.stroke(); cx.setLineDash([]); }
     if (b.homing && b.kind !== 'missile') { cx.strokeStyle = '#4a9aff'; cx.lineWidth = 1; cx.beginPath(); cx.arc(0, 0, r + 6, b.spin, b.spin + 2); cx.stroke(); }
     if (b.poison && b.kind !== 'acid') { cx.fillStyle = '#8aff4a'; cx.fillRect(-r - 2, -1, 2, 2); }
@@ -789,10 +969,14 @@ function drawFx(wd) {
     if (f.type === 'bolt') { cx.strokeStyle = '#7aa0ff'; cx.lineWidth = 3.5; cx.beginPath(); cx.moveTo(f.x, f.y - 12); const pts = []; for (let i = 1; i < 6; i++) { const k = i / 6; pts.push([f.x + (f.x2 - f.x) * k + (fx() - .5) * 14, f.y - 12 + (f.y2 - f.y) * k + (fx() - .5) * 14]); } pts.forEach(q => cx.lineTo(q[0], q[1])); cx.lineTo(f.x2, f.y2 - 12); cx.stroke(); cx.strokeStyle = '#ffffff'; cx.lineWidth = 1.3; cx.stroke(); }
     if (f.type === 'circle') { drawSpellCircle(f.x, f.y, f.r * (1.3 - f.life), f.c, f.life * 4, Math.min(1, f.life * 4)); }
     if (f.type === 'sfx') { const k = 1 + Math.max(0, f.life - .55) * 4; cx.save(); cx.translate(f.x, f.y - (0.7 - f.life) * 16); cx.rotate(f.rot); cx.scale(k, k); cx.font = `bold ${f.size}px Impact, "Arial Black", sans-serif`; cx.textAlign = 'center'; cx.lineJoin = 'round'; cx.lineWidth = f.size / 4; cx.strokeStyle = INK; cx.strokeText(f.txt, 0, 0); cx.fillStyle = f.col; cx.fillText(f.txt, 0, 0); cx.restore(); }
+    if (f.type === 'chant') { cx.save(); cx.translate(f.x, f.y); cx.scale(1, .45); cx.rotate(f.life * 3); cx.strokeStyle = f.c; cx.lineWidth = 1.2; cx.beginPath(); const n = f.n, k = n >= 5 ? 2 : 1; for (let i = 0; i <= n; i++) { const q = -Math.PI / 2 + i * TAU * (n % 2 && n >= 5 ? 2 : 1) / n; cx.lineTo(Math.cos(q) * f.r, Math.sin(q) * f.r); } cx.stroke(); cx.beginPath(); cx.arc(0, 0, f.r * 1.15, 0, TAU); cx.stroke(); cx.restore(); }
+    if (f.type === 'frostring') { cx.strokeStyle = f.c; cx.lineWidth = 1.2; cx.beginPath(); for (let i = 0; i < 12; i++) { const q = i * TAU / 12, rr = f.r * (i % 2 ? .82 : 1) * (1.2 - f.life * .5); cx.lineTo(f.x + Math.cos(q) * rr, f.y - 10 + Math.sin(q) * rr * .5); } cx.closePath(); cx.stroke(); }
+    if (f.type === 'thorns') { cx.fillStyle = '#6a8a2a'; for (let i = 0; i < 12; i++) { const q = i * TAU / 12, rr = f.r * (1.1 - f.life); cx.beginPath(); cx.moveTo(f.x + Math.cos(q - .08) * rr * .6, f.y + Math.sin(q - .08) * rr * .3); cx.lineTo(f.x + Math.cos(q) * rr, f.y + Math.sin(q) * rr * .5); cx.lineTo(f.x + Math.cos(q + .08) * rr * .6, f.y + Math.sin(q + .08) * rr * .3); cx.fill(); } }
+    if (f.type === 'quake') { cx.strokeStyle = '#7a5a34'; cx.lineWidth = 1.5; cx.beginPath(); for (let i = 0; i < 7; i++) { const q = i * TAU / 7 + .3; cx.moveTo(f.x, f.y); cx.lineTo(f.x + Math.cos(q) * f.r * .5, f.y + Math.sin(q) * f.r * .25); cx.lineTo(f.x + Math.cos(q + .15) * f.r, f.y + Math.sin(q + .15) * f.r * .5); } cx.stroke(); }
     if (f.type === 'text') { cx.fillStyle = '#ffe08a'; cx.font = 'bold 10px Georgia'; cx.textAlign = 'center'; cx.fillText(f.txt, f.x, f.y - (1 - f.life) * 20); cx.textAlign = 'left'; f.life -= 0; }
   }
   cx.globalAlpha = 1;
-  for (const p of wd.parts) { cx.globalAlpha = Math.min(1, p.life * 2.5); cx.fillStyle = p.c; if (p.ember) { const z = p.s; cx.beginPath(); cx.moveTo(p.x, p.y - z); cx.lineTo(p.x + z * .6, p.y); cx.lineTo(p.x, p.y + z); cx.lineTo(p.x - z * .6, p.y); cx.fill(); } else cx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s); }
+  for (const p of wd.parts) { cx.globalAlpha = Math.min(1, p.life * 2.5); cx.fillStyle = p.c; if (p.cross) { cx.fillRect(p.x - .8, p.y - 2.5, 1.6, 5); cx.fillRect(p.x - 2.5, p.y - .8, 5, 1.6); } else if (p.ember) { const z = p.s; cx.beginPath(); cx.moveTo(p.x, p.y - z); cx.lineTo(p.x + z * .6, p.y); cx.lineTo(p.x, p.y + z); cx.lineTo(p.x - z * .6, p.y); cx.fill(); } else cx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s); }
   cx.globalAlpha = 1;
 }
 const ambient = [];
@@ -809,7 +993,7 @@ function render(t) {
     for (const e of room.drops) { const bob = Math.sin(e.t * 8 + e.x) * 1.5; cx.fillStyle = 'rgba(255,120,40,.35)'; cx.beginPath(); cx.moveTo(e.x, e.y - 8 + bob); cx.lineTo(e.x + 5.5, e.y + bob); cx.lineTo(e.x, e.y + 8 + bob); cx.lineTo(e.x - 5.5, e.y + bob); cx.fill(); cx.fillStyle = '#ff9a3a'; cx.beginPath(); cx.moveTo(e.x, e.y - 5 + bob); cx.lineTo(e.x + 3.5, e.y + bob); cx.lineTo(e.x, e.y + 5 + bob); cx.lineTo(e.x - 3.5, e.y + bob); cx.fill(); cx.fillStyle = '#fff0c0'; cx.fillRect(e.x - 1, e.y - 2 + bob, 2, 2); }
     const ents = room.foes.map(f => ({ y: f.y, d: () => { drawFoe(f, t); } }));
     for (const q of extraEnts()) ents.push(q);
-    ents.push({ y: P.y, d: () => drawPilgrim(P.x, P.y, t, G.cls, P.inv > 0 && Math.floor(t * 20) % 2 ? .4 : 1) });
+    ents.push({ y: P.y, d: () => { drawSigils(P.x, P.y, sigList(wand()), t, P.shield); drawPilgrim(P.x, P.y, t, G.cls, P.inv > 0 && Math.floor(t * 20) % 2 ? .4 : 1); } });
     ents.sort((a, b) => a.y - b.y).forEach(e => e.d());
     drawShots(room);
     for (const b of room.eshots) { light(b.x, b.y, 20, biome().lampRgb, .45); cx.fillStyle = '#1a0a0a'; cx.beginPath(); cx.arc(b.x, b.y, 6, 0, TAU); cx.fill(); glowDot(b.x, b.y, 3, '#fff0e0', b.col || '#e02a1a'); }
@@ -839,7 +1023,7 @@ function bar(x, y, w, h, f, c1, c2, label) {
 function drawHUD() {
   const x = 14, y = 14, w = Math.min(220, SW - 90), wn = wand();
   bar(x, y, w, 16, G.flame / G.maxFlame, '#a8321e', '#ffb347', '❤ ' + Math.ceil(G.flame) + '/' + G.maxFlame);
-  bar(x, y + 20, w * .7, 9, wn.mana / wn.maxMana, '#2a3a8a', '#7ab8ff');
+  bar(x, y + 20, w * .7, 9, wn.mana / mmax(wn), '#2a3a8a', '#7ab8ff');
   cx.font = '12px Georgia'; cx.fillStyle = '#d6b98c'; cx.textBaseline = 'middle';
   cx.fillText('📖 ' + wn.name + (G.wands.length > 1 ? ' (' + (G.active + 1) + '/2)' : '') + '  ·  ' + (G.floor >= ENDLESS_START ? 'Depth ' + depthOf() : 'Floor ' + (G.floor + 1) + '/4') + '  ·  Room ' + (G.step + 1) + '/' + G.map.length + '  ·  ✦ ' + Math.floor(G.embersRun) + (G.curses.length ? '  ' + G.curses.map(c => CURSES.find(q => q.id === c).icon).join('') : ''), x, y + 42);
   document.getElementById('dodgeBtn').classList.toggle('cd', P.dodgeCd > 0); document.getElementById('skillBtn').classList.toggle('cd', P.skillCd > 0);
@@ -860,5 +1044,5 @@ function frame(now) {
 }
 showCamp();
 requestAnimationFrame(frame);
-window.__ashen = { get G() { return G; }, get mode() { return mode; }, get room() { return room; }, get preview() { return preview; }, P, input, buildCast, describeCast, CARDS, editor, showMap, victory, bossDown, jump(fl, st) { G.floor = fl; G.step = 0; G.path = []; G.map = genMap(); G.step = st == null ? 0 : Math.min(st, G.map.length - 1); bg = null; showMap(); }, get FLOORS() { return FLOORS; } };
+window.__ashen = { get G() { return G; }, get mode() { return mode; }, get room() { return room; }, get preview() { return preview; }, P, input, buildCast, describeCast, CARDS, editor, showMap, victory, bossDown, jump(fl, st) { G.floor = fl; G.step = 0; G.path = []; G.map = genMap(); G.step = st == null ? 0 : Math.min(st, G.map.length - 1); bg = null; showMap(); }, get FLOORS() { return FLOORS; }, NEW_PAGES, spawnShot, updateShots, tryCast, sigN, sigList, mmax, mreg, sigilTick, absorbHit, dodgeSigils, startPreview, get G2() { return G; }, set G(v) { G = v; } };
 window.__ready = true;
