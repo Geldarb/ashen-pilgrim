@@ -128,7 +128,7 @@ update = dt => {
     if (!D.down) continue;
     const helper = all.some(A => A !== D && !A.down && Math.hypot(A.x - D.x, A.y - D.y) < 42);
     D.rev = helper ? (D.rev || 0) + dt : Math.max(0, (D.rev || 0) - dt * .5);
-    if (D.rev >= 2) { D.down = false; D.rev = 0; D.inv = 1.5; if (D === P) { G.flame = Math.max(1, Math.round(G.maxFlame * .3)); toast('✚ You were revived!'); } else { D.hp = Math.max(1, Math.round(D.maxHp * .3)); toast('✚ ' + D.name + ' revived'); } }
+    if (D.rev >= 2) { D.down = false; D.rev = 0; D.inv = 1.5; au('revive'); if (D === P) { G.flame = Math.max(1, Math.round(G.maxFlame * .3)); toast('✚ You were revived!'); } else { D.hp = Math.max(1, Math.round(D.maxHp * .3)); toast('✚ ' + D.name + ' revived'); } }
   }
   if (all.every(D => D.down) && mode === 'room') { toAll({ k: 'over' }); return coopOver(); }
   NET.sendT -= dt; if (NET.sendT <= 0) { NET.sendT = 1 / 15; toAll(makeSnap()); }
@@ -140,8 +140,8 @@ function makeSnap() {
   for (const q of livePeers()) pl.push([q.id, nx(q.x), ny(q.y), r2(q.face), r2(q.walk), Math.ceil(q.hp), q.maxHp, q.down ? 1 : 0, r2(q.castT), q.wand ? q.wand.hue : 30, q.wand ? leavesOf(q.wand) : 1, q.cls, r2(q.rev || 0), q.em, sigList(q.wand), q.shield ? 1 : 0]);
   return {
     k: 'snap', kind: room.kind, aw: A.x1 - A.x0, ah: A.y1 - A.y0, done: room.done ? 1 : 0, fl: G.floor, st: G.step,
-    foes: room.foes.map(f => [f.id, f.type, nx(f.x), ny(f.y), Math.ceil(f.hp), Math.ceil(f.max), f.elite ? 1 : 0, f.boss ? 1 : 0, f.hit > 0 ? 1 : 0, f.phase, r2(Math.max(0, f.spawnT)), f.burn > 0 ? 1 : 0, f.frozen > 0 ? 1 : 0, f.poison > 0 ? 1 : 0, r2(f.r)]),
-    shots: room.shots.slice(-140).map(b => [b.kind, nx(b.x), ny(b.y), Math.round(b.vx), Math.round(b.vy), r2(b.r), b.col, b.el || 0, r2(b.age), r2(b.spin || 0), b.novaR != null ? r2(b.novaR) : -1, b.tx != null ? nx(b.tx) : -1, b.ty != null ? ny(b.ty) : -1, (b.trig ? 1 : 0) | (b.homing ? 2 : 0) | (b.poison ? 4 : 0), b.ov || 0, b.grow || 0]),
+    foes: room.foes.map(f => [f.id, f.type, nx(f.x), ny(f.y), Math.ceil(f.hp), Math.ceil(f.max), f.elite ? 1 : 0, f.boss ? 1 : 0, f.hit > 0 ? 1 : 0, f.phase, r2(Math.max(0, f.spawnT)), f.burn > 0 ? 1 : 0, f.frozen > 0 ? 1 : 0, f.poison > 0 ? 1 : 0, r2(f.r), r2(tellOf(f)), f.face || 1, (f.stun > 0 ? 1 : 0) | (f.mark > 0 ? 2 : 0) | (f.silence > 0 ? 4 : 0) | (f.slowT > 0 ? 8 : 0) | (f.hex > 0 ? 16 : 0) | (f.gild > 0 ? 32 : 0) | (f.lunge > 0 ? 64 : 0) | (f.phaseT > 0 ? 128 : 0)]),
+    shots: room.shots.slice(-140).map(b => [b.kind, nx(b.x), ny(b.y), Math.round(b.vx), Math.round(b.vy), r2(b.r), b.col, b.el || 0, r2(b.age), r2(b.spin || 0), b.novaR != null ? r2(b.novaR) : -1, b.tx != null ? nx(b.tx) : -1, b.ty != null ? ny(b.ty) : -1, (b.trig ? 1 : 0) | (b.homing ? 2 : 0) | (b.poison ? 4 : 0), b.ov || 0, b.grow || 0, r2(b.wz || 0), ...(A_ => A_ ? [nx(A_.x), ny(A_.y)] : [-1, -1])(anchorOf(b)), r2(b.gy != null ? b.gy - b.y : 0), b.fateT > 0 ? 1 : 0]),
     es: room.eshots.map(b => [nx(b.x), ny(b.y), Math.round(b.vx), Math.round(b.vy), b.col || 0]),
     dr: room.drops.map(e => [nx(e.x), ny(e.y)]), wi: room.wisps.map(w => [nx(w.x), ny(w.y)]), fxs, pl,
   };
@@ -222,14 +222,15 @@ function applySnap(s) {
   NET.lastSnap = performance.now(); const A = arena(); room.scale = (A.x1 - A.x0) / s.aw;
   const seen = new Set();
   for (const a of s.foes) {
-    const [id, type, x, y, hp, max, elite, boss, hit, phase, spawnT, burn, frozen, poison, r] = a; seen.add(id);
+    const [id, type, x, y, hp, max, elite, boss, hit, phase, spawnT, burn, frozen, poison, r, tell, face, st] = a; seen.add(id);
     let f = NET.foeMap.get(id); const X = dx_(x), Y = dy_(y);
     if (!f) { f = { id, type, x: X, y: Y, t: Math.random() * 9, kx: 0, ky: 0 }; NET.foeMap.set(id, f); }
-    Object.assign(f, { tx: X, ty: Y, hp, max, elite: !!elite, boss: !!boss, phase, spawnT, burn: burn ? 1 : 0, frozen: frozen ? 1 : 0, poison: poison ? 1 : 0, r }); if (hit) f.hit = .08;
+    Object.assign(f, { tx: X, ty: Y, hp, max, elite: !!elite, boss: !!boss, phase, spawnT, burn: burn ? 1 : 0, frozen: frozen ? 1 : 0, poison: poison ? 1 : 0, r, tell: tell || 0, face: face || 1, stun: st & 1 ? 1 : 0, mark: st & 2 ? 1 : 0, silence: st & 4 ? 1 : 0, slowT: st & 8 ? 1 : 0, hex: st & 16 ? 1 : 0, gild: st & 32 ? 1 : 0, lunge: st & 64 ? 1 : 0, phaseT: st & 128 ? 1 : 0 }); if (hit) { f.hit = .08; au('hit', f); }
   }
-  for (const [id, f] of NET.foeMap) if (!seen.has(id)) { NET.foeMap.delete(id); G.kills++; for (let i = 0; i < 14; i++) room.parts.push({ x: f.x, y: f.y, vx: (Math.random() - .5) * 220, vy: (Math.random() - .5) * 220, life: .6, c: i % 2 ? '#ff8a2a' : '#3a3428', s: 3 }); }
+  for (const [id, f] of NET.foeMap) if (!seen.has(id)) { NET.foeMap.delete(id); G.kills++; corpse(f); au('death', f); for (let i = 0; i < 14; i++) room.parts.push({ x: f.x, y: f.y, vx: (Math.random() - .5) * 220, vy: (Math.random() - .5) * 220, life: .6, c: i % 2 ? '#ff8a2a' : '#3a3428', s: 3 }); }
   room.foes = [...NET.foeMap.values()];
-  room.shots = s.shots.map(([kind, x, y, vx, vy, r, col, el, age, spin, novaR, tx, ty, fl, ov, grow]) => ({ ov, grow, kind, x: dx_(x), y: dy_(y), vx, vy, r, col, el: el || undefined, age, spin, novaR: novaR >= 0 ? novaR : undefined, tx: tx >= 0 ? dx_(tx) : undefined, ty: ty >= 0 ? dy_(ty) : undefined, trig: fl & 1, homing: fl & 2, poison: fl & 4, hit: [] }));
+  const nNew = s.shots.filter(b => b[8] < .1).length; if (nNew) { const b = s.shots.find(b => b[8] < .1); au('castGuest', b[7] || '', b[0]); }
+  room.shots = s.shots.map(([kind, x, y, vx, vy, r, col, el, age, spin, novaR, tx, ty, fl, ov, grow, wz, ax, ay, gy, fate]) => ({ ov, grow, wz: wz || 0, ax: ax >= 0 ? dx_(ax) : undefined, ay: ay >= 0 ? dy_(ay) : undefined, gy: gy ? dy_(y) + gy : undefined, fateT: fate ? .1 : 0, armT: CARDS[kind] && CARDS[kind].grave ? .28 : undefined, kind, x: dx_(x), y: dy_(y), vx, vy, r, col, el: el || undefined, age, spin, novaR: novaR >= 0 ? novaR : undefined, tx: tx >= 0 ? dx_(tx) : undefined, ty: ty >= 0 ? dy_(ty) : undefined, trig: fl & 1, homing: fl & 2, poison: fl & 4, hit: [] }));
   room.eshots = s.es.map(([x, y, vx, vy, col]) => ({ x: dx_(x), y: dy_(y), vx, vy, col: col || undefined }));
   room.drops = s.dr.map(([x, y], i) => ({ x: dx_(x), y: dy_(y), t: i }));
   room.wisps = s.wi.map(([x, y]) => ({ x: dx_(x), y: dy_(y), life: 1 }));
@@ -238,7 +239,7 @@ function applySnap(s) {
   const others = [];
   for (const [id, x, y, face, walk, hp, maxHp, down, castT, hue, leaves, cls, rev, em, sigs, shield] of s.pl) {
     const pl = NET.players.find(p => p.id === id) || { name: 'Mage', slot: 0 };
-    if (id === NET.id) { const was = P.down; if (hp < G.flame - .5) { P.hurt = .25; shake = 5; } G.flame = hp; G.maxFlame = maxHp; P.down = !!down; P.rev = rev; P.castT = castT; P.shield = !!shield; G.embersRun = NET.em0 + em; if (P.down && !was) toast('💀 You are down — an ally can revive you!', 1800); if (!P.down && was) toast('✚ You were revived!'); continue; }
+    if (id === NET.id) { const was = P.down; if (hp < G.flame - .5) { P.hurt = .25; shake = 5; au('hurt'); buzz(35, 'hurt'); } G.flame = hp; G.maxFlame = maxHp; P.down = !!down; P.rev = rev; P.castT = castT; P.shield = !!shield; if (NET.em0 + em > G.embersRun) au('pickup'); G.embersRun = NET.em0 + em; if (P.down && !was) toast('💀 You are down — an ally can revive you!', 1800); if (!P.down && was) { toast('✚ You were revived!'); au('revive'); } continue; }
     const prev = room.others.find(o => o.id === id), X = dx_(x), Y = dy_(y);
     others.push({ id, name: pl.name, slot: pl.slot, x: prev ? prev.x : X, y: prev ? prev.y : Y, tx: X, ty: Y, face, walk, hp, maxHp, down: !!down, castT, hue, leaves, cls, rev, sigs, shield: !!shield });
   }
@@ -280,7 +281,7 @@ render = t => {
   if (!NET.on || !room || !G) return;
   cx.save(); cx.setTransform(DPR * Z, 0, 0, DPR * Z, 0, 0); tag(P.x, P.y, myName(), slotCol(NET.slot), G.flame / G.maxFlame, P.down, P.rev); cx.restore();
   cx.save(); cx.setTransform(DPR, 0, 0, DPR, 0, 0); cx.font = '11px Georgia'; cx.fillStyle = '#d6b98c'; cx.textBaseline = 'middle';
-  cx.fillText('⚔ Co-op ' + NET.code + ' · ' + NET.players.length + ' mage' + (NET.players.length > 1 ? 's' : '') + (NET.host ? ' · host' : ''), 14, 74); cx.restore();
+  cx.fillText('⚔ Co-op ' + NET.code + ' · ' + NET.players.length + ' mage' + (NET.players.length > 1 ? 's' : '') + (NET.host ? ' · host' : ''), 14 + SAFE.l, 74 + SAFE.t); cx.restore();
 };
 // in co-op the world never pauses; the menu offers leaving instead
 const _pause = togglePause;

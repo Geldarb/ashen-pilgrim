@@ -2,10 +2,18 @@
 // Grimoire Ascent: static game + co-op lobby relay (host-authoritative: the host's browser simulates, the server only relays)
 const http = require('http'), path = require('path'), express = require('express'), { WebSocketServer } = require('ws');
 const app = express(), ROOT = __dirname;
-const PUBLIC = new Set(['/', '/index.html', '/game.js', '/art.js', '/coop.js', '/style.css']);
+const fs = require('fs');
+const ASSETS = ['/', '/index.html', '/style.css', '/art.js', '/game.js', '/pages2.js', '/foes.js', '/coop.js', '/audio.js', '/mobile.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/maskable-512.png', '/icons/apple-touch-icon.png'];
+const PUBLIC = new Set(ASSETS);
+// build version: the deployed commit on Render, else the server start time (local dev)
+const BUILD = (process.env.RENDER_GIT_COMMIT || '').slice(0, 12) || 'dev-' + Date.now().toString(36);
+const SW = fs.readFileSync(path.join(ROOT, 'sw.template.js'), 'utf8').replace('__BUILD__', BUILD).replace('__ASSETS__', JSON.stringify(ASSETS));
 app.get('/healthz', (q, r) => r.send('ok'));
+app.get('/version', (q, r) => r.set('Cache-Control', 'no-store').json({ build: BUILD }));
+app.get('/sw.js', (q, r) => r.set({ 'Content-Type': 'text/javascript', 'Cache-Control': 'no-cache, no-store', 'Service-Worker-Allowed': '/' }).send(SW));
 app.use((q, r, next) => PUBLIC.has(q.path) ? next() : r.status(404).send('Not found'));
-app.use(express.static(ROOT, { index: 'index.html', maxAge: '5m' }));
+// no-cache = always revalidate (ETag), so a new deploy is picked up on the next load; the service worker is network-first
+app.use(express.static(ROOT, { index: 'index.html', setHeaders: (r, f) => { r.setHeader('Cache-Control', 'no-cache'); if (f.endsWith('.webmanifest')) r.setHeader('Content-Type', 'application/manifest+json'); } }));
 const server = http.createServer(app), wss = new WebSocketServer({ server, path: '/ws', maxPayload: 256 * 1024 });
 const rooms = new Map(); // code -> { code, host, members: Map(id -> ws), started }
 const LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
