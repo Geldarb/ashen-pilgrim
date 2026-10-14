@@ -112,17 +112,17 @@ CARDS.addmana.desc = 'Refunds 30 mana. Does nothing else.';
 for (const c of Object.values(CARDS)) c.desc = c.desc.replace(/Next spell/g, 'Next spell');
 // ---------- floors / biomes ----------
 const FLOORS = [
-  { name: 'Verdant Ruins', boss: 'Thorn Colossus', pattern: 'radial', prop: 'leaf', lamp: '#7dff9a', lampRgb: '120,255,150',
-    names: ['Thornling', 'Moss Imp', 'Bramble Seer'], pal: { sky: '#7ad6ff', sky2: '#b8ecff', far: '#5aa8d8', wall: '#a8b49a', wallD: '#7a8670', window: '#3a6a8a', windowHi: '#bfe8ff', ledge: '#c8d0b8', floor: '#8ec06a', floor2: '#86b862', floorD: '#6a9a4a', crack: '#4a7a3a' },
+  { name: 'Verdant Ruins', boss: 'Thorn Colossus', pattern: 'radial', prop: 'leaf', lamp: '#d8b060', lampRgb: '220,150,70',
+    names: ['Thornling', 'Moss Imp', 'Bramble Seer'], pal: { bg: '#0c0f0a', wallTop: '#0a0d09', wallBot: '#1f2a1e', block: [58, 70, 50], surround: '#2f3a2a', win: ['#3e5e44', '#1e3024', '#0c140e'], winHi: 'rgba(150,220,150,.12)', pillar: '#1d241a', pillarL: '#2e3a28', ledge: '#3a4632', banner: '#1f3a22', trim: '#9a8a4a', floorTop: '#232a1e', floorBot: '#161b13', tile: [38, 46, 32], moss: 'rgba(80,120,50,.6)', grade: 'rgba(30,60,30,.10)' },
     skin: { a: '#5ac85a', d: '#3a8a3a', horn: '#f0e0a0', eye: '#ffe14a', wing: '#2f8a5a', robe: '#3a7a4a', robeD: '#285a34' }, bossSkin: { a: '#4aa84a', d: '#2f7a34', trim: '#c89a4a', gem: '#ff5aa8', glow: '#7dff9a' } },
   { name: 'Cinder Caldera', boss: 'Magma Tyrant', pattern: 'spiral', prop: 'lava', lamp: '#ffb02a', lampRgb: '255,150,50',
-    names: ['Cinder Brute', 'Ash Imp', 'Pyre Seer'], pal: { sky: '#ff7a4a', sky2: '#ffb06a', far: '#c84a3a', wall: '#7a4a48', wallD: '#5a3234', window: '#ffcf4a', windowHi: '#fff6c0', ledge: '#9a5a50', floor: '#5a3a44', floor2: '#543640', floorD: '#3e2832', crack: '#ff7a2a' },
+    names: ['Cinder Brute', 'Ash Imp', 'Pyre Seer'], pal: { bg: '#120a08', wallTop: '#0e0706', wallBot: '#2e1a14', block: [80, 46, 34], surround: '#3a2218', win: ['#a8461a', '#5a1e0e', '#1e0a06'], winHi: 'rgba(255,150,60,.16)', pillar: '#24140f', pillarL: '#3a2218', ledge: '#4a2c1e', banner: '#5a1a12', trim: '#c88a3a', floorTop: '#2a1a15', floorBot: '#170e0b', tile: [50, 32, 26], moss: 'rgba(255,90,20,.55)', grade: 'rgba(80,20,0,.10)' },
     skin: { a: '#e8503a', d: '#a8302a', horn: '#2a1a1a', eye: '#fff04a', wing: '#8a2a2a', robe: '#4a2a3a', robeD: '#301a28' }, bossSkin: { a: '#c8402a', d: '#8a2a1a', trim: '#ffcf4a', gem: '#fff04a', glow: '#ffb02a' } },
-  { name: 'Frostspire Halls', boss: 'Rime Matriarch', pattern: 'aimed', prop: 'ice', lamp: '#8fe4ff', lampRgb: '140,220,255',
-    names: ['Frost Ghoul', 'Ice Sprite', 'Rime Seer'], pal: { sky: '#3a4ab8', sky2: '#6a7ae0', far: '#2a3488', wall: '#c8dcf0', wallD: '#98b0d0', window: '#4a6ad8', windowHi: '#e8f6ff', ledge: '#e0eefa', floor: '#a8c8e8', floor2: '#a0c0e2', floorD: '#7a9ac8', crack: '#5a7ab0' },
+  { name: 'Frostspire Halls', boss: 'Rime Matriarch', pattern: 'aimed', prop: 'ice', lamp: '#9ac8ff', lampRgb: '120,170,255',
+    names: ['Frost Ghoul', 'Ice Sprite', 'Rime Seer'], pal: { bg: '#0a0d12', wallTop: '#080a10', wallBot: '#1e2633', block: [56, 66, 84], surround: '#2c3546', win: ['#4a6a90', '#1e2c44', '#0a1018'], winHi: 'rgba(170,210,255,.14)', pillar: '#181e2a', pillarL: '#2a3446', ledge: '#36425a', banner: '#1e2a4a', trim: '#8aa0c0', floorTop: '#1f2530', floorBot: '#12161e', tile: [36, 42, 54], moss: 'rgba(170,215,255,.35)', grade: 'rgba(20,40,80,.10)' },
     skin: { a: '#bfe8ff', d: '#7ab0e0', horn: '#ffffff', eye: '#3a8aff', wing: '#8ac8f0', robe: '#5a7ad0', robeD: '#3a54a0' }, bossSkin: { a: '#e8f4ff', d: '#9ac0e8', trim: '#5a8aff', gem: '#4ad8ff', glow: '#8fe4ff' } },
-  { name: 'Abyssal Palace', boss: 'Hollow Sovereign', pattern: 'chaos', prop: 'void', lamp: '#d07aff', lampRgb: '200,110,255',
-    names: ['Void Knight', 'Shade Bat', 'Abyss Priest'], pal: { sky: '#1a0e30', sky2: '#3a1a5a', far: '#0e0820', wall: '#4a3a6a', wallD: '#30244a', window: '#ff4a9a', windowHi: '#ffc0e0', ledge: '#6a5a8a', floor: '#2e2444', floor2: '#2a2040', floorD: '#1e1630', crack: '#b06aff' },
+  { name: 'Abyssal Palace', boss: 'Hollow Sovereign', pattern: 'chaos', prop: 'void', lamp: '#c07aff', lampRgb: '170,90,240',
+    names: ['Void Knight', 'Shade Bat', 'Abyss Priest'], pal: { bg: '#0b0810', wallTop: '#08060c', wallBot: '#221a2e', block: [62, 48, 78], surround: '#30243e', win: ['#6a2a6a', '#2e1236', '#0e0612'], winHi: 'rgba(220,120,255,.14)', pillar: '#1a1424', pillarL: '#2c2238', ledge: '#3a2c48', banner: '#3a1240', trim: '#b08ac8', floorTop: '#1e1826', floorBot: '#110d16', tile: [40, 32, 50], moss: 'rgba(180,90,255,.45)', grade: 'rgba(50,10,70,.12)' },
     skin: { a: '#5a4a8a', d: '#382a60', horn: '#ff4a9a', eye: '#ff4a9a', wing: '#2a1a4a', robe: '#22183a', robeD: '#140e24' }, bossSkin: { a: '#3a2a5a', d: '#22183a', trim: '#ffcf4a', gem: '#ff4a9a', glow: '#d07aff' } },
 ];
 const ENDLESS_START = 4;
@@ -196,7 +196,7 @@ function spawnShot(world, spec, x, y, ang) {
   let dmg = b.dmg * Math.pow(1.8, cnt('heavy')) * Math.pow(2, cnt('bloodwax')) * Math.pow(1.3, cnt('larger')) * (world.dmgMul || 1);
   const r = b.r * Math.pow(2, cnt('larger')) * Math.pow(.5, cnt('smallfast'));
   const s = {
-    kind: spec.p, x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, spd, dmg, r, col: m('bloodwax') ? '#ff4a5a' : b.col, lt: m('bloodwax') ? '255,60,70' : b.lt,
+    kind: spec.p, x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, spd, dmg, r, el: b.el, col: m('bloodwax') ? '#ff4a5a' : b.col, lt: m('bloodwax') ? '255,60,70' : b.lt,
     life: b.life * (m('speed') ? 0.8 : 1) + (m('bounce') ? 1 : 0) + (m('orbit') ? 1.5 : 0),
     homing: b.homing || m('homing'), pierce: (b.pierce || 0) + 2 * cnt('pierce'), bounce: (b.bounce || 0) + 3 * cnt('bounce') + (m('pingpong') ? 0 : 0), trail: m('trail'), trailT: 0,
     freeze: b.freeze || m('freeze'), boom: b.boom || (m('explode') ? 40 : 0), burn: b.burn || m('trail'), chain: (b.chain || 0) + 2 * cnt('chainmod'),
@@ -555,11 +555,11 @@ function tickPreview(dt, t) {
   pv.dps = pv.dps.filter(e => pv.t - e.t < 3);
   // draw
   const g = pv.ctx; cx = g; g.setTransform(pv.pd, 0, 0, pv.pd, 0, 0);
-  g.fillStyle = '#f6eedb'; g.fillRect(0, 0, 300, 120); g.fillStyle = '#e8dcc0'; g.fillRect(0, 96, 300, 24); g.strokeStyle = 'rgba(20,16,26,.12)'; for (let x = 0; x < 300; x += 30) { g.beginPath(); g.moveTo(x, 20); g.lineTo(x, 120); g.stroke(); }
+  g.fillStyle = '#1a1813'; g.fillRect(0, 0, 300, 120); g.fillStyle = '#14120e'; g.fillRect(0, 96, 300, 24); g.strokeStyle = 'rgba(0,0,0,.4)'; for (let x = 0; x < 300; x += 30) { g.beginPath(); g.moveTo(x, 20); g.lineTo(x, 120); g.stroke(); }
   drawPatches(wd); drawFoe(d, t);
   light(34, 70, 40, '255,150,60', .8); glowDot(34, 70, 4, '#fff0c0', 'rgba(255,150,60,.45)');
   drawShots(wd); drawFx(wd);
-  g.fillStyle = INK; g.font = 'bold 11px Impact, "Arial Black", sans-serif'; g.textBaseline = 'top';
+  g.fillStyle = '#d6b98c'; g.font = '11px Georgia'; g.textBaseline = 'top';
   g.fillText('Training dummy · DPS ≈ ' + Math.round(pv.dps.reduce((s, e) => s + e.d, 0) / 3) + ' · mana ' + Math.floor(wn.mana) + '/' + wn.maxMana, 6, 4);
   cx = mainCx;
 }
@@ -644,7 +644,7 @@ function update(dt) {
   const w = wand(), t = nearestFoe(room, P.x, P.y);
   if (t) P.face = Math.atan2(t.y - P.y, t.x - P.x); else if (Math.hypot(P.vx, P.vy) > 1) P.face = Math.atan2(P.vy, P.vx);
   P.castT = Math.max(0, (P.castT || 0) - dt);
-  if (t && w.cd <= 0 && mode === 'room' && (P.castT = .18, room.fxs.push({ type: 'circle', x: P.x, y: P.y, r: 20, life: .3, c: '#ffe680' }), true)) tryCast(room, w, P.x + Math.cos(P.face) * 14, P.y - 14, Math.atan2(t.y - t.r * .8 - (P.y - 14), t.x - P.x), payFlame);
+  if (t && w.cd <= 0 && mode === 'room' && (P.castT = .18, room.fxs.push({ type: 'circle', x: P.x, y: P.y, r: 20, life: .3, c: w.slots.includes('inverted') ? '#e8e4f0' : `hsl(${w.hue},80%,65%)` }), true)) tryCast(room, w, P.x + Math.cos(P.face) * 14, P.y - 14, Math.atan2(t.y - t.r * .8 - (P.y - 14), t.x - P.x), payFlame);
   for (const ws of room.wisps) { ws.life -= dt; ws.a += dt * 3.2; ws.x = P.x + Math.cos(ws.a) * 46; ws.y = P.y - 8 + Math.sin(ws.a) * 46; for (const f of room.foes) if (Math.hypot(f.x - ws.x, f.y - ws.y) < f.r + 8 && (f.wt || 0) <= 0) { hurtFoe(room, f, 10); f.burn = 2; f.wt = 0.3; } }
   room.wisps = room.wisps.filter(x => x.life > 0);
   updateShots(room, dt);
@@ -701,7 +701,7 @@ function bossAI(f, dt) {
 // ---------- anime FX helpers ----------
 let impactT = 0, speedT = 0, speedAng = 0;
 function impact(d) { impactT = Math.max(impactT, d); }
-function sfx(x, y, txt, col, size = 16) { const w = room || (preview && preview.world); if (!w) return; w.fxs.push({ type: 'sfx', x, y, txt, col, size, life: .7, rot: (fx() - .5) * .4 }); }
+function sfx(x, y, txt, col, size = 16) { return; const w = room || (preview && preview.world); if (!w) return; w.fxs.push({ type: 'sfx', x, y, txt, col, size, life: .7, rot: (fx() - .5) * .4 }); }
 // ---------- input ----------
 const input = { dx: 0, dy: 0, keys: {}, stick: null };
 addEventListener('keydown', e => { input.keys[e.code] = true; if (e.code === 'Space') { dodge(); e.preventDefault(); } if (e.code === 'KeyE') skill(); if (e.code === 'KeyQ') swapWand(); if (e.code === 'Escape' && mode === 'room') togglePause(); keyDir(); });
@@ -731,8 +731,7 @@ function drawShots(wd) {
     const a = Math.atan2(b.vy, b.vx), x = b.x, y = b.y, r = b.r;
     if (lights && b.novaR === undefined) light(x, y, 14 + r * 3, b.lt || '255,200,120', .55);
     cx.save(); cx.translate(x, y); cx.lineJoin = 'round';
-    if (!['nova', 'meteor', 'lance', 'bolt', 'chain', 'ice', 'fireball', 'missile'].includes(b.kind)) { cx.fillStyle = INK; cx.beginPath(); cx.arc(0, 0, Math.max(2, r) * (b.kind === 'saw' ? 1.45 : 1) + 1.8, 0, TAU); cx.fill(); }
-    else if (b.kind !== 'nova') { cx.strokeStyle = INK; cx.lineWidth = 4.5; cx.rotate(a); cx.beginPath(); cx.moveTo(-r * 3, 0); cx.lineTo(r * 2, 0); cx.stroke(); cx.rotate(-a); }
+    if (b.kind !== 'nova' && b.kind !== 'meteor') { cx.save(); cx.rotate(a); cx.strokeStyle = b.col || '#ffd070'; cx.globalAlpha = .45; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(-r * 2 - 10, -r * .6); cx.lineTo(-r, -r * .3); cx.moveTo(-r * 2 - 14, r * .6); cx.lineTo(-r, r * .3); cx.stroke(); cx.restore(); }
     switch (b.kind) {
       case 'fireball': cx.rotate(a); cx.fillStyle = '#c8301a'; cx.beginPath(); cx.moveTo(-r * 3.2, 0); cx.quadraticCurveTo(-r, -r * 1.2, 0, -r); cx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2); cx.quadraticCurveTo(-r, r * 1.2, -r * 3.2, 0); cx.fill(); glowDot(0, 0, r * .75, '#ffe08a', '#ff7a1a'); break;
       case 'ice': cx.rotate(a); cx.fillStyle = '#7ac8ff'; cx.beginPath(); cx.moveTo(r * 2.4, 0); cx.lineTo(-r, -r); cx.lineTo(-r * 1.6, 0); cx.lineTo(-r, r); cx.closePath(); cx.fill(); cx.fillStyle = '#eaf8ff'; cx.beginPath(); cx.moveTo(r * 2.2, 0); cx.lineTo(-r * .6, -r * .4); cx.lineTo(-r * .2, 0); cx.fill(); break;
@@ -752,6 +751,19 @@ function drawShots(wd) {
       case 'mine': cx.fillStyle = '#2a2420'; cx.beginPath(); cx.arc(0, 0, r + 1, 0, TAU); cx.fill(); cx.strokeStyle = '#6a5a4a'; cx.lineWidth = 1.5; cx.stroke(); for (let i = 0; i < 4; i++) { const aa = i * TAU / 4; cx.fillStyle = '#6a5a4a'; cx.fillRect(Math.cos(aa) * (r + 2) - 1, Math.sin(aa) * (r + 2) - 1, 2, 2); } cx.fillStyle = b.age > .4 && Math.sin(b.age * 14) > 0 ? '#ff3a2a' : '#5a1a14'; cx.fillRect(-1.5, -1.5, 3, 3); break;
       default: glowDot(0, 0, Math.max(1.5, r * .8), '#fff6d0', b.col); // spark
     }
+    if (b.el && b.kind !== 'nova') { // elemental accent: crisp, grounded
+      const sp = b.spin + b.age * 9;
+      switch (b.el) {
+        case 'Wind': cx.strokeStyle = 'rgba(200,255,225,.7)'; cx.lineWidth = 1; for (let k = 0; k < 2; k++) { cx.beginPath(); cx.arc(0, 0, r + 4, sp + k * Math.PI, sp + k * Math.PI + 1.3); cx.stroke(); } break;
+        case 'Fire': if (fx() < .35) wd.parts.push({ x: x + (fx() - .5) * r, y: y + (fx() - .5) * r, vx: (fx() - .5) * 30, vy: -30 - fx() * 30, life: .4, c: fx() < .5 ? '#ffb347' : '#ff5a1a', s: 1.6, ember: true }); break;
+        case 'Water': cx.strokeStyle = 'rgba(160,220,255,.55)'; cx.lineWidth = 1; cx.beginPath(); cx.ellipse(0, 0, r + 3 + Math.sin(b.age * 14), (r + 3) * .6, sp * .2, 0, TAU); cx.stroke(); break;
+        case 'Lightning': if (fx() < .5) { cx.strokeStyle = '#fff8c0'; cx.lineWidth = 1; cx.beginPath(); const q = fx() * TAU; cx.moveTo(Math.cos(q) * r, Math.sin(q) * r); cx.lineTo(Math.cos(q + .3) * (r + 5), Math.sin(q + .3) * (r + 5)); cx.lineTo(Math.cos(q - .1) * (r + 8), Math.sin(q - .1) * (r + 8)); cx.stroke(); } break;
+        case 'Shadow': if (fx() < .4) wd.parts.push({ x: x + (fx() - .5) * r * 2, y: y + (fx() - .5) * r * 2, vx: (fx() - .5) * 10, vy: -8, life: .45, c: 'rgba(40,10,60,.75)', s: 3 }); break;
+        case 'Light': { cx.fillStyle = 'rgba(255,250,220,.85)'; const L = r + 4 + Math.sin(b.age * 20) * 1.5; cx.beginPath(); cx.moveTo(0, -L); cx.lineTo(.8, -.8); cx.lineTo(L, 0); cx.lineTo(.8, .8); cx.lineTo(0, L); cx.lineTo(-.8, .8); cx.lineTo(-L, 0); cx.lineTo(-.8, -.8); cx.closePath(); cx.fill(); break; }
+        case 'Earth': cx.fillStyle = '#6a4a2a'; for (let k = 0; k < 3; k++) { const q = sp + k * 2.1; cx.fillRect(Math.cos(q) * (r + 4) - 1, Math.sin(q) * (r + 4) - 1, 2.5, 2.5); } break;
+        case 'Poison': if (fx() < .25) wd.parts.push({ x, y, vx: (fx() - .5) * 12, vy: 10, life: .35, c: '#6ad02a', s: 2 }); break;
+      }
+    }
     if (b.trig) { cx.strokeStyle = '#4fd46a'; cx.lineWidth = 1.5; cx.setLineDash([2, 2]); cx.beginPath(); cx.arc(0, 0, r + 4, 0, TAU); cx.stroke(); cx.setLineDash([]); }
     if (b.homing && b.kind !== 'missile') { cx.strokeStyle = '#4a9aff'; cx.lineWidth = 1; cx.beginPath(); cx.arc(0, 0, r + 6, b.spin, b.spin + 2); cx.stroke(); }
     if (b.poison && b.kind !== 'acid') { cx.fillStyle = '#8aff4a'; cx.fillRect(-r - 2, -1, 2, 2); }
@@ -761,7 +773,7 @@ function drawShots(wd) {
 function drawFx(wd) {
   for (const f of wd.fxs) {
     cx.globalAlpha = Math.min(1, f.life * 3);
-    if (f.type === 'ring') { cx.strokeStyle = INK; cx.lineWidth = 5; cx.beginPath(); cx.arc(f.x, f.y - 10, f.r, 0, TAU); cx.stroke(); cx.strokeStyle = f.c; cx.lineWidth = 2.5; cx.beginPath(); cx.arc(f.x, f.y - 10, f.r, 0, TAU); cx.stroke(); }
+    if (f.type === 'ring') { cx.strokeStyle = f.c; cx.lineWidth = 2.5; cx.beginPath(); cx.arc(f.x, f.y - 10, f.r, 0, TAU); cx.stroke(); }
     if (f.type === 'boom') { f.r += (f.R - f.r) * .35; cx.fillStyle = 'rgba(255,120,30,.25)'; cx.beginPath(); cx.arc(f.x, f.y, f.r, 0, TAU); cx.fill(); cx.strokeStyle = '#ffd070'; cx.lineWidth = 3; cx.stroke(); cx.fillStyle = '#fff0c0'; cx.beginPath(); cx.arc(f.x, f.y, f.r * .3 * f.life * 3, 0, TAU); cx.fill(); }
     if (f.type === 'bolt') { cx.strokeStyle = '#7aa0ff'; cx.lineWidth = 3.5; cx.beginPath(); cx.moveTo(f.x, f.y - 12); const pts = []; for (let i = 1; i < 6; i++) { const k = i / 6; pts.push([f.x + (f.x2 - f.x) * k + (fx() - .5) * 14, f.y - 12 + (f.y2 - f.y) * k + (fx() - .5) * 14]); } pts.forEach(q => cx.lineTo(q[0], q[1])); cx.lineTo(f.x2, f.y2 - 12); cx.stroke(); cx.strokeStyle = '#ffffff'; cx.lineWidth = 1.3; cx.stroke(); }
     if (f.type === 'circle') { drawSpellCircle(f.x, f.y, f.r * (1.3 - f.life), f.c, f.life * 4, Math.min(1, f.life * 4)); }
@@ -783,44 +795,41 @@ function render(t) {
   for (const [x, y] of braziers()) drawBrazier(x, y, t);
   if (room) {
     drawPatches(room);
-    for (const e of room.drops) { const bob = Math.sin(e.t * 8 + e.x) * 1.5; cx.fillStyle = INK; cx.beginPath(); cx.moveTo(e.x, e.y - 8 + bob); cx.lineTo(e.x + 5.5, e.y + bob); cx.lineTo(e.x, e.y + 8 + bob); cx.lineTo(e.x - 5.5, e.y + bob); cx.fill(); cx.fillStyle = '#6af0ff'; cx.beginPath(); cx.moveTo(e.x, e.y - 5 + bob); cx.lineTo(e.x + 3.5, e.y + bob); cx.lineTo(e.x, e.y + 5 + bob); cx.lineTo(e.x - 3.5, e.y + bob); cx.fill(); cx.fillStyle = '#fff0c0'; cx.fillRect(e.x - 1, e.y - 2 + bob, 2, 2); }
+    for (const e of room.drops) { const bob = Math.sin(e.t * 8 + e.x) * 1.5; cx.fillStyle = 'rgba(255,120,40,.35)'; cx.beginPath(); cx.moveTo(e.x, e.y - 8 + bob); cx.lineTo(e.x + 5.5, e.y + bob); cx.lineTo(e.x, e.y + 8 + bob); cx.lineTo(e.x - 5.5, e.y + bob); cx.fill(); cx.fillStyle = '#ff9a3a'; cx.beginPath(); cx.moveTo(e.x, e.y - 5 + bob); cx.lineTo(e.x + 3.5, e.y + bob); cx.lineTo(e.x, e.y + 5 + bob); cx.lineTo(e.x - 3.5, e.y + bob); cx.fill(); cx.fillStyle = '#fff0c0'; cx.fillRect(e.x - 1, e.y - 2 + bob, 2, 2); }
     const ents = room.foes.map(f => ({ y: f.y, d: () => { drawFoe(f, t); } }));
     ents.push({ y: P.y, d: () => drawPilgrim(P.x, P.y, t, G.cls, P.inv > 0 && Math.floor(t * 20) % 2 ? .4 : 1) });
     ents.sort((a, b) => a.y - b.y).forEach(e => e.d());
     drawShots(room);
-    for (const b of room.eshots) { cx.fillStyle = INK; cx.beginPath(); cx.arc(b.x, b.y, 6.5, 0, TAU); cx.fill(); cx.fillStyle = b.col || '#ff2a5a'; cx.beginPath(); cx.arc(b.x, b.y, 4.8, 0, TAU); cx.fill(); cx.fillStyle = '#ffffff'; cx.beginPath(); cx.arc(b.x - 1.2, b.y - 1.2, 1.8, 0, TAU); cx.fill(); }
-    for (const w of room.wisps) { light(w.x, w.y, 26, '150,220,255', .6); cx.fillStyle = INK; cx.beginPath(); cx.arc(w.x, w.y, 6, 0, TAU); cx.fill(); glowDot(w.x, w.y, 3.5, '#ffffff', '#7ad8ff'); }
+    for (const b of room.eshots) { light(b.x, b.y, 20, biome().lampRgb, .45); cx.fillStyle = '#1a0a0a'; cx.beginPath(); cx.arc(b.x, b.y, 6, 0, TAU); cx.fill(); glowDot(b.x, b.y, 3, '#fff0e0', b.col || '#e02a1a'); }
+    for (const w of room.wisps) { light(w.x, w.y, 26, '150,220,255', .6); glowDot(w.x, w.y, 4, '#ffffff', 'rgba(140,220,255,.6)'); }
     drawFx(room);
   } else {
     if (ambient.length < 60) ambient.push({ x: fx() * W, y: H + 10, vy: -20 - fx() * 40, vx: (fx() - .5) * 15, s: 1 + fx() * 2 });
     drawPilgrim(W / 2, H * .82, t, G ? G.cls : 'pilgrim');
   }
-  for (const a of ambient) { a.x += a.vx / 60 + Math.sin(t + a.y * .02) * .3; a.y += a.vy / 60; cx.fillStyle = biome().lamp; cx.fillRect(a.x, a.y, a.s, a.s); }
+  for (const a of ambient) { a.x += a.vx / 60 + Math.sin(t + a.y * .02) * .3; a.y += a.vy / 60; cx.fillStyle = `rgba(${biome().lampRgb},${.45 + Math.sin(t * 5 + a.x) * .3})`; cx.fillRect(a.x, a.y, a.s, a.s); }
   for (let i = ambient.length - 1; i >= 0; i--) if (ambient[i].y < -10) ambient.splice(i, 1);
   cx.restore();
   cx.setTransform(DPR, 0, 0, DPR, 0, 0); // screen space
-  if (speedT > 0 && room) { speedT -= 1 / 60; cx.strokeStyle = 'rgba(255,255,255,.75)'; cx.lineWidth = 2; cx.beginPath(); const c = Math.cos(speedAng), sn = Math.sin(speedAng); for (let i = 0; i < 26; i++) { const o = (fx() - .5) * Math.max(SW, SH) * 1.4, px = SW / 2 - sn * o, py = SH / 2 + c * o, L = 40 + fx() * 120, d0 = (fx() - .5) * SW; cx.moveTo(px + c * d0, py + sn * d0); cx.lineTo(px + c * (d0 - L), py + sn * (d0 - L)); } cx.stroke(); }
-  if (impactT > 0) { // manga impact frame: flash + radial ink speed lines
-    impactT -= 1 / 60; const cxp = SW / 2, cyp = SH * .45;
-    cx.fillStyle = 'rgba(255,255,255,.55)'; cx.fillRect(0, 0, SW, SH);
-    cx.fillStyle = INK; for (let i = 0; i < 48; i++) { const a = i / 48 * TAU + fx() * .05, r0 = Math.min(SW, SH) * (.32 + fx() * .12), r1 = Math.max(SW, SH); cx.beginPath(); cx.moveTo(cxp + Math.cos(a - .012) * r1, cyp + Math.sin(a - .012) * r1); cx.lineTo(cxp + Math.cos(a) * r0, cyp + Math.sin(a) * r0); cx.lineTo(cxp + Math.cos(a + .012) * r1, cyp + Math.sin(a + .012) * r1); cx.fill(); }
-  }
+  if (speedT > 0 && room) { speedT -= 1 / 60; cx.strokeStyle = 'rgba(220,230,255,.18)'; cx.lineWidth = 1; cx.beginPath(); const c = Math.cos(speedAng), sn = Math.sin(speedAng); for (let i = 0; i < 14; i++) { const o = (fx() - .5) * 160, px = (P.x - sn * o) * Z, py = (P.y - 20 + c * o) * Z, L = 30 + fx() * 60; cx.moveTo(px - c * 10, py - sn * 10); cx.lineTo(px - c * (10 + L), py - sn * (10 + L)); } cx.stroke(); }
+  if (impactT > 0) { impactT -= 1 / 60; cx.fillStyle = `rgba(255,236,200,${Math.min(.22, impactT * 1.6)})`; cx.fillRect(0, 0, SW, SH); }
+  cx.save(); cx.setTransform(DPR * Z, 0, 0, DPR * Z, 0, 0); cx.fillStyle = biome().pal.grade; cx.fillRect(0, 0, W, H); cx.restore();
   if (room && G) drawHUD();
   if (input.stick) { const s = input.stick; cx.strokeStyle = 'rgba(255,180,90,.35)'; cx.lineWidth = 2; cx.beginPath(); cx.arc(s.ox, s.oy, 50, 0, TAU); cx.stroke(); cx.fillStyle = 'rgba(255,170,70,.45)'; cx.beginPath(); cx.arc(s.ox + clamp(input.dx, -1, 1) * 50, s.oy + clamp(input.dy, -1, 1) * 50, 20, 0, TAU); cx.fill(); }
   if (P.hurt > 0) { cx.fillStyle = `rgba(150,20,10,${P.hurt})`; cx.fillRect(0, 0, SW, SH); }
 }
 function bar(x, y, w, h, f, c1, c2, label) {
-  cx.fillStyle = INK; cx.fillRect(x - 2, y - 2, w + 4, h + 4);
-  cx.fillStyle = '#fffaf0'; cx.fillRect(x, y, w, h);
-  cx.fillStyle = c1; cx.fillRect(x, y, w * clamp(f, 0, 1), h); cx.fillStyle = c2; cx.fillRect(x, y, w * clamp(f, 0, 1), Math.max(2, h * .35));
-  if (label) { cx.font = 'bold 12px Impact, "Arial Black", sans-serif'; cx.textBaseline = 'middle'; cx.lineWidth = 3; cx.strokeStyle = INK; cx.strokeText(label, x + 6, y + h / 2 + 1); cx.fillStyle = '#fff'; cx.fillText(label, x + 6, y + h / 2 + 1); }
+  cx.fillStyle = 'rgba(10,8,6,.7)'; cx.fillRect(x, y, w, h);
+  const g = cx.createLinearGradient(x, 0, x + w, 0); g.addColorStop(0, c1); g.addColorStop(1, c2); cx.fillStyle = g; cx.fillRect(x + 2, y + 2, (w - 4) * clamp(f, 0, 1), h - 4);
+  cx.strokeStyle = '#6b4a26'; cx.strokeRect(x, y, w, h);
+  if (label) { cx.fillStyle = '#ffe9c0'; cx.font = 'bold 11px Georgia'; cx.textBaseline = 'middle'; cx.fillText(label, x + 6, y + h / 2 + .5); }
 }
 function drawHUD() {
   const x = 14, y = 14, w = Math.min(220, SW - 90), wn = wand();
-  bar(x, y, w, 16, G.flame / G.maxFlame, '#ff2a5a', '#ff8aa8', 'HP ' + Math.ceil(G.flame) + '/' + G.maxFlame);
-  bar(x, y + 22, w * .7, 9, wn.mana / wn.maxMana, '#2a6aff', '#8ac8ff');
-  const txt = (G.floor >= ENDLESS_START ? 'ENDLESS · DEPTH ' + depthOf() : 'FLOOR ' + (G.floor + 1) + '/4') + ' · ROOM ' + (G.step + 1) + '/' + G.map.length + ' · ✦' + Math.floor(G.embersRun) + (G.curses.length ? ' ' + G.curses.map(c => CURSES.find(q => q.id === c).icon).join('') : '');
-  cx.font = 'bold 12px Impact, "Arial Black", sans-serif'; cx.textBaseline = 'middle'; cx.lineWidth = 3; cx.strokeStyle = INK; cx.strokeText(txt, x, y + 46); cx.fillStyle = '#fff'; cx.fillText(txt, x, y + 46);
+  bar(x, y, w, 16, G.flame / G.maxFlame, '#a8321e', '#ffb347', '❤ ' + Math.ceil(G.flame) + '/' + G.maxFlame);
+  bar(x, y + 20, w * .7, 9, wn.mana / wn.maxMana, '#2a3a8a', '#7ab8ff');
+  cx.font = '12px Georgia'; cx.fillStyle = '#d6b98c'; cx.textBaseline = 'middle';
+  cx.fillText('📖 ' + wn.name + (G.wands.length > 1 ? ' (' + (G.active + 1) + '/2)' : '') + '  ·  ' + (G.floor >= ENDLESS_START ? 'Depth ' + depthOf() : 'Floor ' + (G.floor + 1) + '/4') + '  ·  Room ' + (G.step + 1) + '/' + G.map.length + '  ·  ✦ ' + Math.floor(G.embersRun) + (G.curses.length ? '  ' + G.curses.map(c => CURSES.find(q => q.id === c).icon).join('') : ''), x, y + 42);
   document.getElementById('dodgeBtn').classList.toggle('cd', P.dodgeCd > 0); document.getElementById('skillBtn').classList.toggle('cd', P.skillCd > 0);
   document.getElementById('swapBtn').classList.toggle('hidden', G.wands.length < 2);
 }
