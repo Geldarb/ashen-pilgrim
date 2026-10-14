@@ -62,8 +62,7 @@ for (const [nm, w, h] of SIZES) {
   const st = await p.evaluate(() => AUD.state()); ok(st.played > 3 && st.peakVoices <= st.maxVoices, nm + ': SFX played ' + st.played + ', peak voices ' + st.peakVoices + '/' + st.maxVoices + ', dropped ' + st.dropped + ', track ' + st.track);
   // enemy gallery (only on 390 and tablet to keep runtime down)
   if (nm === '390x844' || nm === 'tablet768x1024' || nm === '844x390') {
-    await p.evaluate(() => { if (!__ashen.room) __ashen.startRoom('fight'); }); await sleep(300);
-    await p.evaluate(() => { const A = __ashen, R = A.room; R.foes.length = 0; R.waves = []; R.shots && (R.shots.length = 0); R.eshots && (R.eshots.length = 0); A.input.fire = false; A.P.x = A.W * .5; A.P.y = A.H * .88;
+    await p.evaluate(() => { const A = __ashen; A.startRoom('fight'); const R = A.room; R.foes.length = 0; R.waves = []; R.shots && (R.shots.length = 0); R.eshots && (R.eshots.length = 0); A.input.fire = false; A.P.x = A.W * .5; A.P.y = A.H * .88;
       const types = ['husk', 'bat', 'cultist']; const ys = [.3, .5, .7];
       types.forEach((t, i) => [.2, .45, .7].forEach((x, j) => { A.spawn(t, A.W * x, A.H * ys[i], 1); const f = R.foes[R.foes.length - 1]; f.spawnT = 0; f.spd = j === 1 ? f.spd : 0.001; f.atk = 99; f.lcd = 99; f.gallery = j; if (j === 2) { f.wind = .15; f.atk = .2; } }));
       window.__galT = setInterval(() => { for (const f of R.foes) { if (f.gallery === 0) { f.hit = .08; } if (f.gallery === 2) { f.wind = Math.max(f.wind, .12); f.atk = Math.max(.15, f.atk); f.lcd = 99; } if (f.gallery === 1) f.atk = 99; A.P.inv = 99; } }, 50); });
