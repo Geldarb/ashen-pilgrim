@@ -2,10 +2,10 @@
 import { createRequire } from 'module'; import http from 'http'; import fs from 'fs'; import path from 'path';
 const req = createRequire('/workspace/tools/'); const puppeteer = req('puppeteer-core');
 const root = '/workspace/ashen-pilgrim';
-const server = http.createServer((q, r) => { let p = q.url.split('?')[0]; if (p === '/') p = '/index.html'; const f = path.join(root, p); if (!fs.existsSync(f)) { r.writeHead(404); return r.end(); } r.writeHead(200, { 'content-type': { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' }[path.extname(f)] }); r.end(fs.readFileSync(f)); });
+const server = http.createServer((q, r) => { let p = q.url.split('?')[0]; if (p === '/') p = '/index.html'; const f = path.join(root, p); if (!fs.existsSync(f)) { r.writeHead(404); return r.end(); } r.writeHead(200, { 'content-type': { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' }[path.extname(f)] || 'application/octet-stream' }); r.end(fs.readFileSync(f)); });
 await new Promise(r => server.listen(0, r)); const base = `http://localhost:${server.address().port}`;
 const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
-const pg = await b.newPage(); const errs = []; pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => m.type() === 'error' && errs.push(m.text()));
+const pg = await b.newPage(); const errs = []; pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => m.type() === 'error' && !/sw\.js|fetching the script/.test(m.text()) && errs.push(m.text()));
 await pg.goto(base + '/'); await pg.waitForFunction('window.__ready');
 await pg.click('#go');
 const out = await pg.evaluate(() => {

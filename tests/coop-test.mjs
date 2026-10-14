@@ -6,7 +6,7 @@ const b = await pp.launch({ executablePath: '/usr/bin/google-chrome', args: ['--
 const errors = [], fails = []; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails.push(m); };
 async function mk(name, w, h) {
   const ctx = await b.createBrowserContext(); const p = await ctx.newPage(); await p.setViewport({ width: w, height: h, deviceScaleFactor: w < 500 ? 3 : 1 });
-  p.on('pageerror', e => errors.push(name + ': ' + e.message)); p.on('console', m => { if (m.type() === 'error') errors.push(name + ' console: ' + m.text()); });
+  p.on('pageerror', e => errors.push(name + ': ' + e.message)); p.on('console', async m => { if (m.type() !== 'error') return; let t = m.text(); if (/JSHandle/.test(t)) t = (await Promise.all(m.args().map(x => x.evaluate(v => v && v.stack ? v.stack.split('\n').slice(0, 3).join(' / ') : String(v)).catch(() => '?')))).join(' '); if (!errors.includes(name + ' console: ' + t)) errors.push(name + ' console: ' + t); });
   p.nm = name; return p;
 }
 const ev = (p, f, ...a) => p.evaluate(f, ...a);
@@ -29,7 +29,7 @@ await waitF(H, () => __ashen.mode === 'map'); await waitF(A, () => __ashen.mode 
 ok(true, 'run started: host on map, guests waiting');
 await sleep(800); await H.screenshot({ path: SH + tag + '-hostmap-390x844.png' });
 // expansion pages in co-op: each mage carries new pages + sigils
-const LO = { H: ['crownglyph','galelash','halochant','hexmote','hexmote','hexmote'], A: ['famsigil','aegissigil','flowsigil','hexachant','emberneedle','emberneedle','emberneedle','emberneedle','emberneedle','emberneedle'], B: ['stormglyph','echoglyph','stormorb','twinrelay','stonespire','mendsigil'] };
+const LO = { H: ['crownglyph','galelash','halochant','hexmote','bloodletter','penance','belltoll','sanctified','gravehand','hexmote'], A: ['famsigil','aegissigil','flowsigil','hexachant','emberneedle','emberneedle','emberneedle','weighted','censer','inkserpent'], B: ['stormglyph','echoglyph','stormorb','twinrelay','stonespire','mendsigil','spiral','pagestorm','haunted','candlewraith'] };
 for (const [p, k] of [[H, 'H'], [A, 'A'], [B, 'B']]) await ev(p, sl => { const w = __ashen.G.wands[0]; w.slots = sl.concat(Array(Math.max(0, 10 - sl.length)).fill(null)); w.maxMana = 400; w.mana = 400; w.regen = 120; }, LO[k]);
 await H.evaluate(() => { const d = document.querySelector('[data-door="fight"]'); d.click(); });
 await waitF(A, () => __ashen.mode === 'room'); await waitF(B, () => __ashen.mode === 'room');
@@ -50,8 +50,10 @@ ok(hx1 > hx0 + 15, `guest sees host move (${hx0.toFixed(0)} → ${hx1.toFixed(0)
 ok(await ev(B, () => __coop.room.others.length) === 2, 'guest B sees both other mages');
 ok(await ev(A, () => __coop.room.shots.length + __coop.room.foes.length) > 0, 'guest receives synced foes/spells');
 const seenK = new Set(), seenOv = { v: 0 };
-for (let i = 0; i < 30; i++) { const k = await ev(H, () => __ashen.room.shots.map(s => s.kind)); k.forEach(x => seenK.add(x)); seenOv.v = Math.max(seenOv.v, await ev(B, () => Math.max(0, ...__coop.room.shots.map(s => s.ov || 0)))); await sleep(150); }
-ok(['galelash','hexmote','emberneedle','stormorb'].every(k => seenK.has(k)), 'host simulates new pages from all three mages: ' + [...seenK].join(','));
+const seenSt = { v: 0 };
+for (let i = 0; i < 30; i++) { seenSt.v |= await ev(A, () => __coop.room.foes.reduce((m, f) => m | (f.stun ? 1 : 0) | (f.mark ? 2 : 0) | (f.slowT ? 8 : 0), 0)); const k = await ev(H, () => __ashen.room.shots.map(s => s.kind)); k.forEach(x => seenK.add(x)); seenOv.v = Math.max(seenOv.v, await ev(B, () => Math.max(0, ...__coop.room.shots.map(s => s.ov || 0)))); await sleep(150); }
+ok(['galelash','hexmote','emberneedle','stormorb','bloodletter','belltoll','censer','pagestorm'].every(k => seenK.has(k)), 'host simulates new pages from all three mages: ' + [...seenK].join(','));
+ok(seenSt.v & 3, 'guest receives new enemy statuses (stun/mark/slow bits ' + seenSt.v + ')');
 ok(seenOv.v > 0, 'guest receives glyph overlays on synced spells (ov ' + seenOv.v + ')');
 ok(await ev(H, () => { const q = [...__coop.NET.peers.values()].find(q => q.name === 'Bryn'); return __ashen.sigN(q.wand, 'fam') === 1 && q.shield; }), 'host runs guest sigils (familiar + aegis shield on Bryn)');
 ok(await ev(A, () => __ashen.P.shield === true), 'guest sees its own aegis shield from snapshot');
@@ -64,6 +66,7 @@ await ev(H, id => { const f = __ashen.room.foes.find(f => f.id === id); if (f) {
 await waitF(H, id => !__ashen.room || !__ashen.room.foes.some(f => f.id === id), 10000, fid);
 await sleep(400);
 ok(!(await ev(A, id => __coop.NET.foeMap.has(id), fid)) && !(await ev(B, id => __coop.NET.foeMap.has(id), fid)), 'both guests saw enemy #' + fid + ' die');
+ok(await ev(A, () => (__coop.room.corpseN || 0) > 0), 'guest renders an ember/ash death corpse');
 // finish the room together
 const t0 = Date.now();
 while (Date.now() - t0 < 40000) { const m = await ev(H, () => { if (__ashen.room) for (const f of __ashen.room.foes) { f.hp = Math.min(f.hp, .01); f.spawnT = 0; } return __ashen.mode; }); if (m !== 'room') break; await sleep(250); }
