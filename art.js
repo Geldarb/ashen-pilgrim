@@ -199,62 +199,7 @@ const BSKIN = [ // bosses: armour / trim / glow per biome
   { a: '#3e4a5e', d: '#242c3a', trim: '#a8bcd8', glow: '#8ad8ff', circ: '140,210,255' },
   { a: '#2e2440', d: '#1a1426', trim: '#a88ac8', glow: '#d07aff', circ: '200,120,255' },
 ];
-function drawFoe(f, t) {
-  const bi = (G ? G.floor || 0 : 0) % 4, S = FSKIN[bi], K = BSKIN[bi];
-  if ((f.elite || f.boss) && f.spawnT <= 0) light(f.x, f.y - f.r, f.r * 2.4, f.boss ? K.circ : '200,40,30', .6);
-  if (f.boss && f.spawnT <= 0) drawSpellCircle(f.x, f.y, 56, K.glow, f.t * .5, .55);
-  cx.save(); cx.translate(f.x, f.y);
-  if (f.spawnT > 0) cx.globalAlpha = Math.max(0, 1 - f.spawnT * 1.6);
-  const flash = f.hit > 0, s = f.r / FOES[f.type].r, F = c => flash ? '#fff4e0' : c;
-  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.beginPath(); cx.ellipse(0, 2, f.r, f.r * .33, 0, 0, TAU); cx.fill();
-  cx.scale(s, s); cx.strokeStyle = OUT; cx.lineWidth = 1.2 / s + .3; cx.lineJoin = 'round';
-  const sw = Math.sin(f.t * 6) * 2;
-  if (f.type === 'husk') {
-    cx.fillStyle = F(S.d); cx.fillRect(-6, -9, 4, 10 + sw * .5); cx.fillRect(2, -9, 4, 10 - sw * .5); cx.strokeRect(-6, -9, 4, 10 + sw * .5); cx.strokeRect(2, -9, 4, 10 - sw * .5);
-    cx.fillStyle = F(S.a); cx.beginPath(); cx.moveTo(-8, -20); cx.lineTo(-14, -6 + sw); cx.lineTo(-11, -5 + sw); cx.lineTo(-6, -16); cx.fill(); cx.stroke(); cx.beginPath(); cx.moveTo(8, -20); cx.lineTo(14, -6 - sw); cx.lineTo(11, -5 - sw); cx.lineTo(6, -16); cx.fill(); cx.stroke();
-    cx.fillStyle = F(S.a); cx.beginPath(); cx.ellipse(0, -16, 10, 11, .15, 0, TAU); cx.fill(); cx.stroke();
-    cx.fillStyle = F('#4a3a2a'); cx.beginPath(); cx.moveTo(-10, -10); cx.lineTo(10, -12); cx.lineTo(9, -6); cx.lineTo(4, -8); cx.lineTo(0, -5); cx.lineTo(-5, -8); cx.lineTo(-9, -5); cx.closePath(); cx.fill(); // rag
-    cx.strokeStyle = '#2a2e22'; cx.lineWidth = 1.2; for (let i = 0; i < 3; i++) { cx.beginPath(); cx.moveTo(-6, -22 + i * 4); cx.quadraticCurveTo(0, -20 + i * 4, 6, -22 + i * 4); cx.stroke(); }
-    cx.strokeStyle = OUT; cx.fillStyle = F(S.bone); cx.beginPath(); cx.arc(3, -30, 6.5, 0, TAU); cx.fill(); cx.stroke();
-    cx.fillStyle = F(S.bone); cx.fillRect(0, -26, 7, 3);
-    cx.fillStyle = '#120c08'; cx.fillRect(0, -32, 3, 3); cx.fillRect(5, -32, 3, 3);
-    cx.fillStyle = S.eye; cx.fillRect(1, -31, 1, 1); cx.fillRect(6, -31, 1, 1);
-    cx.fillStyle = '#120c08'; for (let i = 0; i < 3; i++) cx.fillRect(1 + i * 2, -25, 1, 2);
-  } else if (f.type === 'bat') {
-    const fl = Math.sin(f.t * 18) * 8;
-    cx.translate(0, -22);
-    for (const d of [-1, 1]) { cx.fillStyle = F(S.wing); cx.beginPath(); cx.moveTo(0, 0); cx.lineTo(d * 20, -7 - fl); cx.lineTo(d * 16, 1 - fl * .3); cx.lineTo(d * 12, -2); cx.lineTo(d * 9, 4); cx.lineTo(d * 5, 1); cx.closePath(); cx.fill(); cx.stroke(); cx.strokeStyle = '#5a544a'; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(d * 3, 0); cx.lineTo(d * 16, -5 - fl * .8); cx.stroke(); cx.strokeStyle = OUT; }
-    cx.fillStyle = F(S.a); cx.beginPath(); cx.ellipse(0, 0, 5.5, 7.5, 0, 0, TAU); cx.fill(); cx.stroke();
-    cx.beginPath(); cx.moveTo(-4, -5); cx.lineTo(-4, -11); cx.lineTo(-1, -6); cx.moveTo(4, -5); cx.lineTo(4, -11); cx.lineTo(1, -6); cx.fill();
-    cx.fillStyle = S.eye; cx.fillRect(-3, -3, 2, 2); cx.fillRect(1, -3, 2, 2); cx.fillStyle = '#fff'; cx.fillRect(-2, 2, 1, 2); cx.fillRect(1, 2, 1, 2);
-  } else if (f.type === 'cultist') {
-    cx.fillStyle = F(S.robe); cx.beginPath(); cx.moveTo(-11, 0); cx.lineTo(-6, -26); cx.lineTo(6, -26); cx.lineTo(11, 0); cx.closePath(); cx.fill(); cx.stroke();
-    cx.fillStyle = F(S.robeD); cx.fillRect(-1, -24, 2, 24); cx.fillStyle = F('#c8a050'); cx.fillRect(-7, -12, 14, 2); // sash
-    cx.fillStyle = F(S.robe); cx.beginPath(); cx.moveTo(-7, -24); cx.lineTo(0, -42); cx.lineTo(7, -24); cx.closePath(); cx.fill(); cx.stroke();
-    cx.fillStyle = '#080404'; cx.beginPath(); cx.ellipse(0, -28, 3.5, 4, 0, 0, TAU); cx.fill();
-    cx.fillStyle = S.eye; cx.fillRect(-2, -29, 1.5, 1.5); cx.fillRect(1, -29, 1.5, 1.5);
-    cx.fillStyle = F('#d8c8a0'); cx.fillRect(9, -22, 3, 8); cx.strokeRect(9, -22, 3, 8);
-    cx.fillStyle = S.flame; cx.beginPath(); cx.ellipse(10.5, -25 + sw * .3, 2, 3.5, 0, 0, TAU); cx.fill(); cx.fillStyle = '#ffe08a'; cx.fillRect(10, -25, 1, 2);
-  } else if (f.type === 'warden') {
-    cx.fillStyle = F(K.d); cx.fillRect(-12, -14, 9, 14); cx.fillRect(3, -14, 9, 14); cx.strokeRect(-12, -14, 9, 14); cx.strokeRect(3, -14, 9, 14);
-    cx.fillStyle = F(K.a); cx.beginPath(); cx.moveTo(-24, -58); cx.quadraticCurveTo(0, -80, 24, -58); cx.lineTo(29, -40); cx.lineTo(-29, -40); cx.closePath(); cx.fill(); cx.stroke();
-    cx.fillStyle = F(K.trim); cx.fillRect(-29, -43, 58, 4); cx.fillStyle = F(K.d); cx.fillRect(-18, -62, 3, 18); cx.fillRect(15, -62, 3, 18); // bell bands
-    cx.fillStyle = F(K.a); cx.beginPath(); cx.moveTo(-18, -14); cx.lineTo(-22, -42); cx.lineTo(22, -42); cx.lineTo(18, -14); cx.closePath(); cx.fill(); cx.stroke();
-    cx.strokeStyle = '#2a2b22'; cx.lineWidth = 1.5; cx.beginPath(); cx.moveTo(0, -42); cx.lineTo(0, -14); cx.moveTo(-19, -28); cx.lineTo(19, -28); cx.stroke(); cx.strokeStyle = OUT;
-    cx.fillStyle = K.trim; for (const [a, b] of [[-14, -38], [14, -38], [-14, -18], [14, -18]]) cx.fillRect(a - 1, b - 1, 2, 2); // rivets
-    leafCrest(cx, 0, -28, 6, 4, flash ? '#fff' : K.glow);
-    cx.fillStyle = F(K.a); cx.beginPath(); cx.arc(-24, -38, 8, 0, TAU); cx.fill(); cx.stroke(); cx.beginPath(); cx.arc(24, -38, 8, 0, TAU); cx.fill(); cx.stroke();
-    cx.fillStyle = F(K.d); cx.beginPath(); cx.moveTo(-9, -40); cx.lineTo(-9, -56); cx.lineTo(0, -65); cx.lineTo(9, -56); cx.lineTo(9, -40); cx.closePath(); cx.fill(); cx.stroke();
-    cx.fillStyle = f.phase ? '#ff3a1a' : K.glow; cx.fillRect(-6, -51, 12, 2.5); cx.fillRect(-1, -51, 2, 7);
-    cx.strokeStyle = K.trim; cx.lineWidth = 4; cx.beginPath(); cx.moveTo(28, -34); cx.lineTo(34, 4); cx.stroke();
-    cx.fillStyle = F(K.d); cx.fillRect(25, 0, 18, 11); cx.strokeStyle = OUT; cx.lineWidth = 1.5; cx.strokeRect(25, 0, 18, 11);
-  }
-  cx.restore();
-  if ((f.elite || f.boss) && f.spawnT <= 0) { const w = f.boss ? Math.min(W - 60, 260) : 40, x = Math.round(f.boss ? W / 2 - w / 2 : f.x - w / 2), y = Math.round(f.boss ? arena().y0 - 18 : f.y - f.r * 2.6 - 8); cx.fillStyle = '#000c'; cx.fillRect(x - 1, y - 1, w + 2, 6); cx.fillStyle = '#a8321e'; cx.fillRect(x, y, w * Math.max(0, f.hp / f.max), 4); cx.fillStyle = '#ff7a4a'; cx.fillRect(x, y, w * Math.max(0, f.hp / f.max), 1); if (f.boss) { cx.font = '11px Georgia'; cx.textAlign = 'center'; cx.textBaseline = 'alphabetic'; cx.fillStyle = '#e8c890'; cx.fillText(biome().boss, W / 2, y - 4); cx.textAlign = 'left'; } }
-  if (f.burn > 0) { const k = Math.sin(t * 20) * 1.5; cx.fillStyle = '#ff6a1a'; for (let i = -1; i <= 1; i++) { cx.beginPath(); cx.moveTo(f.x + i * 5 - 3, f.y - f.r * .8); cx.lineTo(f.x + i * 5, f.y - f.r * 1.6 - k - (i ? 0 : 4)); cx.lineTo(f.x + i * 5 + 3, f.y - f.r * .8); cx.fill(); } }
-  if (f.poison > 0) { cx.fillStyle = '#8aff4a'; for (let i = 0; i < 3; i++) { const a = t * 3 + i * 2.1; cx.fillRect(Math.round(f.x + Math.cos(a) * f.r * .8), Math.round(f.y - f.r * 1.2 + Math.sin(a * 1.3) * 5), 2, 2); } }
-  if (f.frozen > 0) { cx.strokeStyle = '#cfefff'; cx.lineWidth = 1.5; cx.beginPath(); for (let i = 0; i < 6; i++) { const a = i * TAU / 6; cx.moveTo(f.x, f.y - f.r); cx.lineTo(f.x + Math.cos(a) * f.r, f.y - f.r + Math.sin(a) * f.r); } cx.stroke(); cx.fillStyle = 'rgba(170,225,255,.25)'; cx.beginPath(); cx.arc(f.x, f.y - f.r, f.r * 1.05, 0, TAU); cx.fill(); }
-}
+// drawFoe lives in foes.js (animated enemy art)
 // glowing magic circle (cast flourish, boss aura): crisp double ring, pentagram, rune ticks
 function drawSpellCircle(x, y, r, col, rot, a) {
   cx.save(); cx.translate(x, y); cx.globalAlpha = a; cx.scale(1, .45); cx.rotate(rot);
