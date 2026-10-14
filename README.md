@@ -1,5 +1,5 @@
-# Ashen Pilgrim
+# Grimoire Ascent
 
-Mobile-first dark-fantasy roguelike. Carry a dying flame (your health and your currency) through a branching cursed floor, casting with Noita-style wands built from spell cards.
+(formerly Ashen Pilgrim) A mobile-first anime-styled roguelike: bind grimoire pages Noita-style, climb 4 biome floors with unique bosses, then Go Endless.
 
-Vanilla JS + canvas, static site, no build step. Play: https://ashen-pilgrim.onrender.com
+Original characters, names and symbols. Vanilla JS + canvas, static site, no build step. Play: https://ashen-pilgrim.onrender.com

@@ -17,8 +17,9 @@ const pick = arr => arr[Math.floor(rng() * arr.length)];
 const fx = Math.random;
 
 // ---------- camp ----------
-const CAMP_KEY = 'ashen-camp', RUN_KEY = 'ashen-run2';
-let camp = { embers: 0, total: 0, witch: false, wick: 0, runs: 0, best: 0, dailyBest: {} };
+const CAMP_KEY = 'ashen-camp', RUN_KEY = 'grimoire-run3';
+const DEBUG = new URLSearchParams(location.search).get('debug');
+let camp = { embers: 0, total: 0, witch: false, wick: 0, runs: 0, best: 0, bestDepth: 0, dailyBest: {} };
 try { Object.assign(camp, JSON.parse(localStorage.getItem(CAMP_KEY) || '{}')); } catch (e) { }
 const saveCamp = () => { try { localStorage.setItem(CAMP_KEY, JSON.stringify(camp)); } catch (e) { } };
 const WITCH_COST = 60;
@@ -63,7 +64,7 @@ const CARDS = {
   accel: { t: 'mod', name: 'Accelerate', icon: '⤴', mana: 5, desc: 'Next spell starts slow and speeds up; hits harder when fast.' },
   pingpong: { t: 'mod', name: 'Ping-pong', icon: '⇄', mana: 4, desc: 'Next spell reverses direction twice.' },
   critburn: { t: 'mod', name: 'Critical on Burning', icon: '✹', mana: 8, desc: 'Triple damage against burning foes.' },
-  lifesteal: { t: 'mod', name: 'Lifesteal', icon: '♥', mana: 25, delay: 0.1, desc: 'Next spell returns 15% of its damage as flame.' },
+  lifesteal: { t: 'mod', name: 'Lifesteal', icon: '♥', mana: 25, delay: 0.1, desc: 'Next spell returns 15% of its damage as HP.' },
   chainmod: { t: 'mod', name: 'Chain', icon: '⛓', mana: 15, desc: 'Next spell arcs to 2 more foes.' },
   wave: { t: 'mod', name: 'Wave Path', icon: '∿', mana: 2, desc: 'Next spell weaves side to side.' },
   addmana: { t: 'mod', name: 'Add Mana', icon: '✚', mana: -30, delay: 0.1, desc: 'Refunds 30 mana. Does nothing else.' },
@@ -85,22 +86,66 @@ const CARDS = {
   copy: { t: 'rare', name: 'Copy Wand', icon: '⎘', mana: 50, delay: 0.3, desc: 'RARE: also casts a bare copy of every projectile in this wand.' },
   inverted: { t: 'rare', name: 'Inverted', icon: '⇆', mana: 0, desc: 'RARE: anywhere in a wand, makes it read right→left.' },
 };
+// ---------- anime retheme: grimoire page names + element colours (mechanics unchanged) ----------
+const PAGE_THEME = {
+  spark: ['Wind Dart', '#6dffb0', '110,255,170', 'Wind'], fireball: ['Blaze Orb', '#ff5a1a', '255,110,40', 'Fire'], ice: ['Frost Needle', '#8fe4ff', '140,220,255', 'Water'],
+  chain: ['Thunder Chain', '#ffe84a', '255,230,80', 'Lightning'], burst: ['Gale Ricochet', '#a8ff6a', '170,255,110', 'Wind'], skull: ['Shadow Skull', '#b07aff', '170,110,255', 'Shadow'],
+  missile: ['Seeker Star', '#ff7ae0', '255,120,220', 'Light'], acid: ['Venom Drop', '#9aff3a', '150,255,60', 'Poison'], blackhole: ['Void Maw', '#7a3aff', '120,60,255', 'Shadow'],
+  meteor: ['Falling Star', '#ff8a2a', '255,140,40', 'Fire'], saw: ['Cyclone Disc', '#c8fff0', '200,255,240', 'Wind'], lance: ['Light Spear', '#fff6a0', '255,245,160', 'Light'],
+  bubble: ['Water Bubble', '#5ac8ff', '90,200,255', 'Water'], bolt: ['Sky Thunder', '#fff04a', '255,240,80', 'Lightning'], wisp: ['Spirit Familiar', '#d8f6ff', '200,240,255', 'Light'],
+  nova: ['Flare Ring', '#ffb347', '255,180,70', 'Fire'], sickle: ['Crescent Blade', '#e8e8ff', '230,230,255', 'Wind'], mine: ['Earth Rune Trap', '#d08a4a', '210,140,70', 'Earth'],
+  homing: ['Tracking Glyph'], pierce: ['Piercing Glyph'], bounce: ['Rebound Glyph'], speed: ['Haste Glyph'], heavy: ['Stone Weight'], trail: ['Flame Wake'], freeze: ['Frost Seal'],
+  explode: ['Burst Seal'], orbit: ['Orbit Glyph'], split: ['Scatter Seal'], poison: ['Venom Seal'], knock: ['Gust Push'], larger: ['Grand Glyph'], smallfast: ['Swift Glyph'],
+  accel: ['Surge Glyph'], pingpong: ['Mirror Glyph'], critburn: ['Inferno Critical'], lifesteal: ['Life Drain'], chainmod: ['Arc Link'], wave: ['Serpent Path'], addmana: ['Mana Font'],
+  double: ['Twin Chant'], triple: ['Triple Chant'], quad: ['Quad Chant'], spreadc: ['Fan Chant'], circle: ['Ring Chant'], behind: ['Back-and-Front Chant'],
+  trigger: ['Relay Dart'], timer: ['Delay Dart'], deathtrig: ['Requiem Dart'], expiry: ['Fading Dart'],
+  bloodwax: ['Blood Pact'], copy: ['Echo Page'], inverted: ['Null Reversal'],
+};
+for (const [id, [name, col, lt, el]] of Object.entries(PAGE_THEME)) { const c = CARDS[id]; c.name = name; if (col) { c.col = col; c.lt = lt; c.el = el; } }
+CARDS.split.desc = 'On hit, bursts into 3 wind darts.';
+CARDS.trigger.desc = 'A wind dart; casts the next page where it hits.'; CARDS.timer.desc = 'A wind dart; casts the next page after 0.5s.';
+CARDS.deathtrig.desc = 'A wind dart; casts the next page from any foe it defeats.'; CARDS.expiry.desc = 'A wind dart; casts the next page where it fades.';
+CARDS.bloodwax.desc = 'FORBIDDEN: costs 3 HP, not mana. Next spell deals double damage.';
+CARDS.copy.desc = 'RARE: also casts a bare echo of every attack page in this grimoire.';
+CARDS.inverted.desc = 'RARE anti-magic: anywhere in a grimoire, negates its order so it reads right→left.';
+CARDS.addmana.desc = 'Refunds 30 mana. Does nothing else.';
+for (const c of Object.values(CARDS)) c.desc = c.desc.replace(/Next spell/g, 'Next spell');
+// ---------- floors / biomes ----------
+const FLOORS = [
+  { name: 'Verdant Ruins', boss: 'Thorn Colossus', pattern: 'radial', prop: 'leaf', lamp: '#7dff9a', lampRgb: '120,255,150',
+    names: ['Thornling', 'Moss Imp', 'Bramble Seer'], pal: { sky: '#7ad6ff', sky2: '#b8ecff', far: '#5aa8d8', wall: '#a8b49a', wallD: '#7a8670', window: '#3a6a8a', windowHi: '#bfe8ff', ledge: '#c8d0b8', floor: '#8ec06a', floor2: '#86b862', floorD: '#6a9a4a', crack: '#4a7a3a' },
+    skin: { a: '#5ac85a', d: '#3a8a3a', horn: '#f0e0a0', eye: '#ffe14a', wing: '#2f8a5a', robe: '#3a7a4a', robeD: '#285a34' }, bossSkin: { a: '#4aa84a', d: '#2f7a34', trim: '#c89a4a', gem: '#ff5aa8', glow: '#7dff9a' } },
+  { name: 'Cinder Caldera', boss: 'Magma Tyrant', pattern: 'spiral', prop: 'lava', lamp: '#ffb02a', lampRgb: '255,150,50',
+    names: ['Cinder Brute', 'Ash Imp', 'Pyre Seer'], pal: { sky: '#ff7a4a', sky2: '#ffb06a', far: '#c84a3a', wall: '#7a4a48', wallD: '#5a3234', window: '#ffcf4a', windowHi: '#fff6c0', ledge: '#9a5a50', floor: '#5a3a44', floor2: '#543640', floorD: '#3e2832', crack: '#ff7a2a' },
+    skin: { a: '#e8503a', d: '#a8302a', horn: '#2a1a1a', eye: '#fff04a', wing: '#8a2a2a', robe: '#4a2a3a', robeD: '#301a28' }, bossSkin: { a: '#c8402a', d: '#8a2a1a', trim: '#ffcf4a', gem: '#fff04a', glow: '#ffb02a' } },
+  { name: 'Frostspire Halls', boss: 'Rime Matriarch', pattern: 'aimed', prop: 'ice', lamp: '#8fe4ff', lampRgb: '140,220,255',
+    names: ['Frost Ghoul', 'Ice Sprite', 'Rime Seer'], pal: { sky: '#3a4ab8', sky2: '#6a7ae0', far: '#2a3488', wall: '#c8dcf0', wallD: '#98b0d0', window: '#4a6ad8', windowHi: '#e8f6ff', ledge: '#e0eefa', floor: '#a8c8e8', floor2: '#a0c0e2', floorD: '#7a9ac8', crack: '#5a7ab0' },
+    skin: { a: '#bfe8ff', d: '#7ab0e0', horn: '#ffffff', eye: '#3a8aff', wing: '#8ac8f0', robe: '#5a7ad0', robeD: '#3a54a0' }, bossSkin: { a: '#e8f4ff', d: '#9ac0e8', trim: '#5a8aff', gem: '#4ad8ff', glow: '#8fe4ff' } },
+  { name: 'Abyssal Palace', boss: 'Hollow Sovereign', pattern: 'chaos', prop: 'void', lamp: '#d07aff', lampRgb: '200,110,255',
+    names: ['Void Knight', 'Shade Bat', 'Abyss Priest'], pal: { sky: '#1a0e30', sky2: '#3a1a5a', far: '#0e0820', wall: '#4a3a6a', wallD: '#30244a', window: '#ff4a9a', windowHi: '#ffc0e0', ledge: '#6a5a8a', floor: '#2e2444', floor2: '#2a2040', floorD: '#1e1630', crack: '#b06aff' },
+    skin: { a: '#5a4a8a', d: '#382a60', horn: '#ff4a9a', eye: '#ff4a9a', wing: '#2a1a4a', robe: '#22183a', robeD: '#140e24' }, bossSkin: { a: '#3a2a5a', d: '#22183a', trim: '#ffcf4a', gem: '#ff4a9a', glow: '#d07aff' } },
+];
+const ENDLESS_START = 4;
+function biome() { return FLOORS[(G ? G.floor || 0 : 0) % 4]; }
+function depthOf() { return G.floor - ENDLESS_START + 1; }
+function leavesOf(w) { return clamp(w.leaves || Math.ceil(w.slots.length / 2), 1, 5); }
+function difficulty() { return 1 + G.floor * 0.5 + G.step * 0.1 + Math.max(0, G.floor - 3) * 0.15; }
 const CARD_POOL = Object.keys(CARDS).filter(k => !['bloodwax', 'copy', 'inverted'].includes(k));
 const RARE_POOL = ['copy', 'inverted'];
-const TYPE_NAME = { proj: 'Projectile', mod: 'Modifier', multi: 'Multicast', trig: 'Trigger', curse: 'Cursed', rare: 'Rare' };
+const TYPE_NAME = { proj: 'Attack Page', mod: 'Glyph Page', multi: 'Chant Page', trig: 'Trigger Page', curse: 'Forbidden Page', rare: 'Rare Page' };
 
 function makeWand(o) { return Object.assign({ name: 'Wand', slots: [], delay: .25, recharge: .5, maxMana: 100, mana: 100, regen: 30, idx: 0, cd: 0, hue: 30 }, o); }
-const WAND_NAMES = ['Ashwood Rod', 'Bone Sceptre', 'Censer Staff', 'Reliquary Wand', 'Thorn Crook', 'Pyre Branch', 'Saint\'s Finger', 'Gallows Twig'];
+const WAND_NAMES = ['Gale Codex', 'Ember Tome', 'Tidebound Grimoire', 'Storm Ledger', 'Umbral Folio', 'Dawn Psalter', 'Stoneleaf Book', 'Starlit Almanac'];
 function randomWand(tier) {
   const n = clamp(Math.round(2 + rnd(2, 4) + tier * 0.5), 2, 8);
   const w = makeWand({ name: pick(WAND_NAMES), slots: Array(n).fill(null), delay: +rnd(.08, .35).toFixed(2), recharge: +rnd(.2, .9).toFixed(2), maxMana: Math.round(rnd(80, 220)), regen: Math.round(rnd(25, 70)), hue: Math.round(rnd(360)) });
-  w.mana = w.maxMana;
+  w.mana = w.maxMana; w.leaves = clamp(Math.ceil(n / 2) + (rng() < .2 ? 1 : 0), 1, 5); w.name = ['One', 'Two', 'Three', 'Four', 'Five'][w.leaves - 1] + '-Leaf ' + w.name;
   w.slots[0] = pick(['spark', 'burst', 'ice', 'spark', 'missile', 'bubble']); if (rng() < .5) w.slots[1] = pick(['double', 'speed', 'homing', 'spark', 'wave']);
   return w;
 }
 function starter(cls) {
-  if (cls === 'witch') return { wands: [makeWand({ name: 'Lantern Rod', slots: ['ice', 'spark', null], delay: .17, recharge: .35, maxMana: 120, mana: 120, regen: 40, hue: 195 })], bag: ['double', 'speed', null, null, null, null, null, null] };
-  return { wands: [makeWand({ name: 'Pilgrim\'s Taper', slots: ['spark', null], delay: .22, recharge: .4, maxMana: 80, mana: 80, regen: 30, hue: 30 })], bag: ['homing', null, null, null, null, null, null, null] };
+  if (cls === 'witch') return { wands: [makeWand({ name: 'Three-Leaf Tidebound Grimoire', leaves: 3, slots: ['ice', 'spark', null], delay: .17, recharge: .35, maxMana: 120, mana: 120, regen: 40, hue: 195 })], bag: ['double', 'speed', null, null, null, null, null, null] };
+  return { wands: [makeWand({ name: 'One-Leaf Ember Tome', leaves: 1, slots: ['spark', null], delay: .22, recharge: .4, maxMana: 80, mana: 80, regen: 30, hue: 30 })], bag: ['homing', null, null, null, null, null, null, null] };
 }
 
 // ---------- cast engine (Noita-style) ----------
@@ -132,7 +177,7 @@ function buildCast(wand) {
   return { shots, mana, delay, flame, wrapped, nextIdx: p };
 }
 function describeCast(wand) {
-  const c = buildCast(Object.assign({}, wand, { idx: 0 })); if (!c) return 'No projectile — this wand casts nothing.';
+  const c = buildCast(Object.assign({}, wand, { idx: 0 })); if (!c) return 'No attack page — this grimoire casts nothing.';
   const d = s => (s.tcard ? CARDS[s.tcard].name : CARDS[s.p].name + (s.copy ? ' (copy)' : '')) + (s.mods.length ? ' [' + s.mods.map(m => CARDS[m].name).join(', ') + ']' : '') + (s.trig ? ' → (' + (s.payload.map(d).join(' + ') || 'nothing') + ')' : '');
   return c.shots.map(d).join(' + ') + ' · ' + c.mana + ' mana';
 }
@@ -176,15 +221,15 @@ function releasePayload(world, s, avoid, noRehit) {
   world.fxs.push({ type: 'ring', x: s.x, y: s.y + 10, r: 2, R: 16, life: .2, c: '#7dff7a' });
 }
 function nearestFoe(world, x, y, skip) { let b = null, bd = 1e9; for (const f of world.foes) { if (f.dead || f.spawnT > 0 || (skip && skip.includes(f))) continue; const d = Math.hypot(f.x - x, f.y - y); if (d < bd) { bd = d; b = f; } } return b; }
-function explode(world, x, y, R, dmg) { world.fxs.push({ type: 'boom', x, y, r: 4, R, life: .32 }); for (let i = 0; i < 18; i++) { const a = fx() * TAU, v = 80 + fx() * 140; world.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: .3 + fx() * .3, c: i % 3 ? '#ffb347' : '#ff5a1a', s: 2 + fx() * 2, ember: true }); } for (const f of world.foes) if (!f.dead && Math.hypot(f.x - x, f.y - f.r * .6 - y) < R + f.r) hurtFoe(world, f, dmg); }
+function explode(world, x, y, R, dmg) { if (world === room) { sfx(x, y - R * .6, R > 60 ? 'KA-BOOM!' : 'BOOM!', '#ffb02a', R > 60 ? 22 : 16); if (R > 60) impact(.06); } world.fxs.push({ type: 'boom', x, y, r: 4, R, life: .32 }); for (let i = 0; i < 18; i++) { const a = fx() * TAU, v = 80 + fx() * 140; world.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: .3 + fx() * .3, c: i % 3 ? '#ffb347' : '#ff5a1a', s: 2 + fx() * 2, ember: true }); } for (const f of world.foes) if (!f.dead && Math.hypot(f.x - x, f.y - f.r * .6 - y) < R + f.r) hurtFoe(world, f, dmg); }
 function onHit(world, s, f) {
   let dmg = s.dmg * (s.critburn && f.burn > 0 ? 3 : 1) * (s.accel ? clamp(s.spd / 300, .6, 2.2) : 1);
-  if (s.critburn && f.burn > 0) world.fxs.push({ type: 'text', x: f.x, y: f.y - f.r * 2.2, txt: 'CRIT', life: .5 });
+  if (s.critburn && f.burn > 0) world.fxs.push({ type: 'sfx', x: f.x, y: f.y - f.r * 2.2, txt: 'CRIT!', col: '#ff5a1a', size: 14, life: .6, rot: -.2 });
   const k = s.knock ? .9 : .12, killed = hurtFoe(world, f, dmg, s.vx * k, s.vy * k);
   if (s.lifesteal && world.onHeal) world.onHeal(dmg * .15);
   if (s.freeze) f.frozen = 1.6; if (s.burn) f.burn = Math.max(f.burn, 2.2); if (s.poison) f.poison = 3;
   if (s.boom) explode(world, s.x, s.y, s.boom, s.dmg * .7);
-  if (s.chain) { let from = f, hitL = [f]; for (let q = 0; q < s.chain; q++) { const n = nearestFoe(world, from.x, from.y, hitL); if (!n || Math.hypot(n.x - from.x, n.y - from.y) > 170) break; world.fxs.push({ type: 'bolt', x: from.x, y: from.y, x2: n.x, y2: n.y, life: .18 }); hurtFoe(world, n, s.dmg * .8); hitL.push(n); from = n; } }
+  if (s.chain) { let from = f, hitL = [f]; for (let q = 0; q < s.chain; q++) { const n = nearestFoe(world, from.x, from.y, hitL); if (!n || Math.hypot(n.x - from.x, n.y - from.y) > 170) break; world.fxs.push({ type: 'bolt', x: from.x, y: from.y, x2: n.x, y2: n.y, life: .18 }); if (q === 0 && world === room && fx() < .4) sfx(n.x, n.y - 30, 'ZAP!', '#ffe84a', 13); hurtFoe(world, n, s.dmg * .8); hitL.push(n); from = n; } }
   if (s.split) { const a = Math.atan2(s.vy, s.vx); for (let i = -1; i <= 1; i++) { const c = spawnShot(world, { p: 'spark', mods: [], nosplit: true }, s.x, s.y, a + Math.PI + i * .7); c.dmg *= .5; c.hit.push(f); } }
   if (s.trig === 'hit') releasePayload(world, s, f);
   if (s.trig === 'death' && killed) { s.x = f.x; s.y = f.y - f.r; releasePayload(world, s, f, true); }
@@ -251,38 +296,38 @@ function hurtFoe(world, f, dmg, kx = 0, ky = 0) {
 let G = null, mode = 'camp', paused = false, room = null;
 const P = { x: 0, y: 0, vx: 0, vy: 0, r: 13, face: 0, dodgeT: 0, dodgeCd: 0, skillCd: 0, inv: 0, hurt: 0, walk: 0 };
 const CLASSES = {
-  pilgrim: { name: 'The Pilgrim', flame: 100, speed: 150 },
-  witch: { name: 'Lantern Witch', flame: 80, speed: 162 },
+  pilgrim: { name: 'Kai Emberline', flame: 100, speed: 150 },
+  witch: { name: 'Lumi Vesper', flame: 80, speed: 162 },
 };
 const CURSES = [
-  { id: 'wrath', name: 'Curse of Wrath', icon: '☠', desc: 'Foes deal +35% damage.' },
-  { id: 'legion', name: 'Curse of the Legion', icon: '👥', desc: 'More foes in every room.' },
-  { id: 'iron', name: 'Curse of Iron Flesh', icon: '⛨', desc: 'Foes have +40% health.' },
+  { id: 'wrath', name: 'Hex of Wrath', icon: '☠', desc: 'Foes deal +35% damage.' },
+  { id: 'legion', name: 'Hex of the Horde', icon: '👥', desc: 'More foes in every room.' },
+  { id: 'iron', name: 'Hex of Iron Hide', icon: '⛨', desc: 'Foes have +40% health.' },
 ];
 const DOORS = {
-  fight: { icon: '⚔', name: 'Fight', desc: 'Hollow dead. A card or wand awaits.' },
-  elite: { icon: '💀', name: 'Elite', desc: 'A hulking foe. Likely a wand.' },
-  shrine: { icon: '⛪', name: 'Shrine', desc: 'Rest, pray, and tinker with your wands.' },
-  merchant: { icon: '⚖', name: 'Merchant', desc: 'Trade flame for spells.' },
-  treasure: { icon: '⚰', name: 'Cursed Treasure', desc: 'Take a curse for riches.' },
-  boss: { icon: '🔔', name: 'The Bell-Warden', desc: 'The keeper of the first floor.' },
+  fight: { icon: '⚔', name: 'Battle', desc: 'Monsters ahead. A page or grimoire awaits.' },
+  elite: { icon: '💀', name: 'Elite', desc: 'A powerful foe. Likely a new grimoire.' },
+  shrine: { icon: '⛩', name: 'Ancient Altar', desc: 'Recover, pray, and rebind your grimoire.' },
+  merchant: { icon: '⚖', name: 'Wandering Peddler', desc: 'Trade HP for pages.' },
+  treasure: { icon: '📕', name: 'Forbidden Tome', desc: 'Accept a hex for riches.' },
+  boss: { icon: '👑', name: 'Floor Boss', desc: 'The master of this floor.' },
 };
 const curse = id => G.curses.includes(id);
 const wand = () => G.wands[G.active] || G.wands[0];
 
 function newRun(cls, daily) {
-  const seed = daily ? hashStr('ashen-' + todayKey()) : (Math.random() * 2 ** 32) >>> 0;
+  const seed = daily ? hashStr('grimoire-' + todayKey()) : (Math.random() * 2 ** 32) >>> 0;
   const st = starter(cls), fl = CLASSES[cls].flame + camp.wick * 10;
-  G = { cls, daily, seed, step: 0, maxFlame: fl, flame: fl, wands: st.wands, active: 0, bag: st.bag, curses: [], embersRun: 0, kills: 0, path: [] };
+  G = { cls, daily, seed, floor: 0, step: 0, maxFlame: fl, flame: fl, wands: st.wands, active: 0, bag: st.bag, curses: [], embersRun: 0, kills: 0, path: [] };
   G.map = genMap(); camp.runs++; saveCamp();
   showMap();
 }
-function stepRng(tag) { rng = mulberry(hashStr(G.seed + ':' + G.step + ':' + tag)); }
+function stepRng(tag) { rng = mulberry(hashStr(G.seed + ':' + G.floor + ':' + G.step + ':' + tag)); }
 function genMap() {
-  const r = mulberry(G.seed), steps = [], pool = ['fight', 'fight', 'elite', 'shrine', 'merchant', 'treasure'];
-  for (let i = 0; i < 6; i++) {
+  const r = mulberry(hashStr(G.seed + ':floor:' + G.floor)), steps = [], pool = ['fight', 'fight', 'elite', 'shrine', 'merchant', 'treasure'];
+  for (let i = 0; i < 5; i++) {
     const n = i === 0 ? 2 : 2 + (r() < 0.5 ? 1 : 0), opts = [];
-    if (i === 0) opts.push('fight', r() < .5 ? 'fight' : 'treasure');
+    if (i === 0) opts.push('fight', r() < .5 ? 'fight' : (G.floor ? 'shrine' : 'treasure'));
     else while (opts.length < n) { const d = pool[Math.floor(r() * pool.length)]; if (!opts.includes(d) || d === 'fight') opts.push(d); }
     if (!opts.includes('fight') && !opts.includes('elite')) opts[0] = 'fight';
     steps.push(opts);
@@ -305,36 +350,41 @@ function on(id, f) { const e = document.getElementById(id); if (e) e.onclick = f
 const SHORT = { critburn: 'Crit on Burn', smallfast: 'Small+Fast', trigger: 'Trigger Bolt', behind: 'Behind+Fwd', blackhole: 'Black Hole', sickle: 'Sickle', bolt: 'Lightning', missile: 'Missile', chain: 'Chain Ltng', burst: 'Bounce Burst', skull: 'Grave Skull', explode: 'Explode', freeze: 'Freeze', wisp: 'Wisp', deathtrig: 'Death Trig', expiry: 'Expiry Trig', lifesteal: 'Lifesteal', knock: 'Knockback' };
 const cardChip = (id, extra = '') => id ? `<div class="chip t-${CARDS[id].t}" data-card="${id}" title="${CARDS[id].name}" ${extra}><i>${CARDS[id].icon}</i><u>${SHORT[id] || CARDS[id].name}</u></div>` : '';
 function cardRow(id, attrs = '', label) { const c = CARDS[id]; return `<button class="card t-${c.t}" ${attrs}><span class="ic">${c.icon}</span><div><b>${label || c.name}</b><span><em>${TYPE_NAME[c.t]}</em> · ${c.mana ? c.mana + ' mana · ' : ''}${c.desc}</span></div></button>`; }
-function wandRow(w, attrs = '', label) { return `<button class="card t-wand" ${attrs}><span class="ic">🪄</span><div><b>${label || w.name}</b><span>${w.slots.length} slots · delay ${w.delay}s · recharge ${w.recharge}s · mana ${w.maxMana} (+${w.regen}/s)${w.slots.some(Boolean) ? ' · holds ' + w.slots.filter(Boolean).map(i => CARDS[i].name).join(', ') : ''}</span></div></button>`; }
+function wandRow(w, attrs = '', label) { return `<button class="card t-wand" ${attrs}><span class="ic">📖</span><div><b>${label || w.name}</b><span>${w.slots.length} slots · delay ${w.delay}s · recharge ${w.recharge}s · mana ${w.maxMana} (+${w.regen}/s)${w.slots.some(Boolean) ? ' · holds ' + w.slots.filter(Boolean).map(i => CARDS[i].name).join(', ') : ''}</span></div></button>`; }
 
 function showCamp() {
-  mode = 'camp'; HUD.classList.add('hidden'); G = null;
+  mode = 'camp'; HUD.classList.add('hidden'); G = null; bg = null;
   const saved = loadRun(), db = camp.dailyBest[todayKey()];
-  panel(`<h1>ASHEN PILGRIM</h1><p class="small">Your flame is your life and your coin. Your wand is your voice.</p>
-  <p>🔥 <b style="color:#ffcf85">${camp.embers}</b> embers at camp</p>
-  ${saved ? '<button class="btn" id="cont">Continue run (room ' + (saved.G.step + 1) + ')</button>' : ''}
-  <button class="btn" id="go">Descend as The Pilgrim 🕯</button>
-  <button class="btn" id="goW" ${camp.witch ? '' : 'disabled'}>Descend as the Lantern Witch 🏮${camp.witch ? '' : ' (locked)'}</button>
+  panel(`<div class="logo"><span>GRIMOIRE</span><b>ASCENT</b></div><p class="small">Bind pages to your grimoire. Climb four floors. Then keep climbing.</p>
+  <p class="stat">✦ <b>${camp.embers}</b> mana shards · best: ${camp.best >= 4 ? 'all 4 floors' : 'floor ' + Math.max(1, camp.best)}${camp.bestDepth ? ' · Endless depth ' + camp.bestDepth : ''}</p>
+  ${saved ? '<button class="btn hot" id="cont">Continue — ' + (saved.G.floor >= ENDLESS_START ? 'Endless depth ' + (saved.G.floor - ENDLESS_START + 1) : 'Floor ' + (saved.G.floor + 1)) + ', room ' + (saved.G.step + 1) + '</button>' : ''}
+  <button class="btn hot" id="go">Ascend as Kai Emberline 🔥</button>
+  <button class="btn" id="goW" ${camp.witch ? '' : 'disabled'}>Ascend as Lumi Vesper 🏮${camp.witch ? '' : ' (locked)'}</button>
   <button class="btn sub" id="daily">☀ Daily seeded run — ${todayKey()}${db ? ' · best ' + db : ''}</button>
-  <h2 style="margin-top:12px">The Camp</h2>
-  <button class="btn sub" id="unW" ${camp.witch || camp.embers < WITCH_COST ? 'disabled' : ''}>${camp.witch ? '🏮 Lantern Witch unlocked (Lantern Rod: 3 slots, Ice Shard + Spark Bolt)' : '🏮 Unlock Lantern Witch — ' + WITCH_COST + ' embers'}</button>
-  <button class="btn sub" id="wick" ${camp.embers < 25 + camp.wick * 15 || camp.wick >= 5 ? 'disabled' : ''}>🕯 Thicker Wick (+10 starting flame) — ${25 + camp.wick * 15} embers · lv ${camp.wick}/5</button>
-  <p class="small">Move: drag / joystick · WASD. Your wand casts by itself at the nearest foe. Dodge: button / Space. Skill: button / E. Swap wand: ⇄ / Q.</p>`);
-  on('cont', () => { const s = loadRun(); G = s.G; showMap(); });
+  ${DEBUG === 'endless' ? '<button class="btn sub" id="dbgE">DEBUG: start at Endless depth 1</button>' : ''}${DEBUG === 'victory' ? '<button class="btn sub" id="dbgV">DEBUG: show victory screen</button>' : ''}
+  <h2>The Mage Hall</h2>
+  <button class="btn sub" id="unW" ${camp.witch || camp.embers < WITCH_COST ? 'disabled' : ''}>${camp.witch ? '🏮 Lumi Vesper has joined (Three-Leaf grimoire: Frost Needle + Wind Dart)' : '🏮 Recruit Lumi Vesper, Lantern Mage — ' + WITCH_COST + ' shards'}</button>
+  <button class="btn sub" id="wick" ${camp.embers < 25 + camp.wick * 15 || camp.wick >= 5 ? 'disabled' : ''}>💪 Spirit Training (+10 starting HP) — ${25 + camp.wick * 15} shards · lv ${camp.wick}/5</button>
+  <p class="small">Move: drag / WASD · Your grimoire casts by itself · Dodge: button / Space · Skill: button / E · Swap grimoire: ⇄ / Q</p>`, 'title');
+  on('cont', () => { const s = loadRun(); G = s.G; bg = null; showMap(); });
   on('go', () => { clearRun(); newRun('pilgrim', false); });
   on('goW', () => { clearRun(); newRun('witch', false); });
-  on('daily', () => { clearRun(); if (!camp.witch) return newRun('pilgrim', true); panel(`<h2>Daily run</h2><button class="btn" id="a">The Pilgrim 🕯</button><button class="btn" id="b">Lantern Witch 🏮</button>`); on('a', () => newRun('pilgrim', true)); on('b', () => newRun('witch', true)); });
-  on('unW', () => { camp.embers -= WITCH_COST; camp.witch = true; saveCamp(); toast('The Lantern Witch joins the camp'); showCamp(); });
+  on('daily', () => { clearRun(); if (!camp.witch) return newRun('pilgrim', true); panel(`<h2>Daily run</h2><button class="btn" id="a">Kai Emberline 🔥</button><button class="btn" id="b">Lumi Vesper 🏮</button>`); on('a', () => newRun('pilgrim', true)); on('b', () => newRun('witch', true)); });
+  on('unW', () => { camp.embers -= WITCH_COST; camp.witch = true; saveCamp(); toast('Lumi Vesper joins the Mage Hall!'); showCamp(); });
   on('wick', () => { camp.embers -= 25 + camp.wick * 15; camp.wick++; saveCamp(); showCamp(); });
+  on('dbgE', () => { clearRun(); newRun('pilgrim', false); G.floor = ENDLESS_START; G.endless = true; G.step = 0; G.map = genMap(); bg = null; showMap(); });
+  on('dbgV', () => { clearRun(); newRun('pilgrim', false); G.floor = 3; victory(); });
 }
+function floorLabel() { return G.floor >= ENDLESS_START ? 'ENDLESS — depth ' + depthOf() + ' · ' + biome().name : 'Floor ' + (G.floor + 1) + '/4 — ' + biome().name; }
 function showMap() {
   mode = 'map'; room = null; HUD.classList.add('hidden'); saveRun();
+  if (!bg) buildBG();
   const opts = G.map[G.step];
-  const crumbs = G.map.map((s, i) => i < G.step ? (DOORS[G.path[i]] || {}).icon || '·' : i === G.step ? '◉' : '·').join(' ');
-  panel(`<h2>Floor I — the Drowned Nave</h2><p class="small">${crumbs}</p>
-  <p>Flame ${Math.ceil(G.flame)}/${G.maxFlame}${G.curses.length ? ' · ' + G.curses.map(c => CURSES.find(x => x.id === c).icon).join('') : ''}</p>
-  <button class="btn" id="edit">🪄 Edit wands</button>
-  <p class="small">Choose a door</p><div class="cards">${opts.map((d, i) => `<button class="card" id="door${i}" data-door="${d}"><span class="ic">${DOORS[d].icon}</span><div><b>${DOORS[d].name}</b><span>${DOORS[d].desc}</span></div></button>`).join('')}</div>
+  const crumbs = G.map.map((s, i) => i < G.step ? (DOORS[G.path[i]] || {}).icon || '·' : i === G.step ? '◉' : s[0] === 'boss' ? '👑' : '·').join(' ');
+  panel(`<h2>${floorLabel()}</h2><p class="small">${crumbs}</p>
+  <p class="stat">HP ${Math.ceil(G.flame)}/${G.maxFlame}${G.curses.length ? ' · ' + G.curses.map(c => CURSES.find(x => x.id === c).icon).join('') : ''}</p>
+  <button class="btn hot" id="edit">📖 Edit grimoire</button>
+  <p class="small">Choose a path</p><div class="cards">${opts.map((d, i) => `<button class="card" id="door${i}" data-door="${d}"><span class="ic">${DOORS[d].icon}</span><div><b>${d === 'boss' ? biome().boss : DOORS[d].name}</b><span>${DOORS[d].desc}</span></div></button>`).join('')}</div>
   <button class="btn sub" id="quit">Abandon run</button>`);
   opts.forEach((d, i) => on('door' + i, () => enterDoor(d)));
   on('edit', () => editor(showMap)); on('quit', () => die(true));
@@ -346,7 +396,27 @@ function enterDoor(d) {
   if (d === 'merchant') return merchant();
   if (d === 'treasure') return treasure();
 }
-function advance() { G.step++; showMap(); }
+function advance() { G.step++; if (G.step >= G.map.length) return nextFloor(); showMap(); }
+function nextFloor() { G.floor++; G.step = 0; G.path = []; G.map = genMap(); bg = null; G.flame = Math.min(G.maxFlame, G.flame + G.maxFlame * .3); toast(G.floor >= ENDLESS_START ? 'ENDLESS DEPTH ' + depthOf() + '!' : 'FLOOR ' + (G.floor + 1) + ': ' + biome().name.toUpperCase() + '!', 2200); showMap(); }
+function bossDown() {
+  if (G.floor === 3) return victory();
+  const d = G.floor >= ENDLESS_START ? depthOf() : 0;
+  if (d) { camp.bestDepth = Math.max(camp.bestDepth || 0, d); saveCamp(); }
+  reward(d ? 'Depth ' + d + ' cleared! Claim a reward' : biome().boss + ' defeated! Claim a reward', .6);
+}
+function victory() {
+  mode = 'win'; HUD.classList.add('hidden');
+  const gained = Math.floor(G.embersRun + 60 * (1 + .5 * G.curses.length));
+  camp.embers += gained; camp.total += gained; camp.best = Math.max(camp.best, 4); G.embersRun = 0;
+  if (G.daily) { const k = todayKey(); camp.dailyBest[k] = Math.max(camp.dailyBest[k] || 0, 4); }
+  saveCamp(); saveRun();
+  panel(`<div class="sfx big">VICTORY!!</div><h1>ALL FOUR FLOORS CONQUERED</h1><p>The Hollow Sovereign shatters. Your grimoire hums with power you didn't know it had.</p><p class="stat">✦ ${gained} mana shards banked at the Mage Hall.</p>
+  <button class="btn hot" id="endless">♾ GO ENDLESS</button><p class="small">Endlessly generated floors, rotating bosses, ever-rising difficulty. Beat your best depth${camp.bestDepth ? ' (' + camp.bestDepth + ')' : ''}.</p>
+  <button class="btn sub" id="camp">Return to the Mage Hall</button>`, 'title');
+  on('endless', () => { mode = 'map'; G.endless = true; G.step = G.map.length; reward('A gift for the endless climb', .7); });
+  on('camp', () => { clearRun(); showCamp(); });
+}
+
 
 function cardChoices(n, cursed) { const out = []; while (out.length < n) { const id = cursed && rng() < .25 ? 'bloodwax' : rng() < (cursed ? .1 : .04) ? pick(RARE_POOL) : pick(CARD_POOL); if (!out.includes(id)) out.push(id); } return out; }
 function bagAdd(id) { const i = G.bag.indexOf(null); if (i >= 0) { G.bag[i] = id; return true; } return false; }
@@ -355,25 +425,25 @@ function reward(title, wandChance) {
   const opts = cardChoices(3, G.curses.length > 0).map(id => ({ card: id }));
   if (rng() < wandChance) opts[2] = { wand: randomWand(G.step + G.curses.length) };
   const full = !G.bag.includes(null);
-  panel(`<h2>${title}</h2><p class="small">Choose one${full ? ' · bag full: a card will replace bag slot 8' : ''}</p><div class="cards">${opts.map((o, i) => o.card ? cardRow(o.card, `id="rw${i}" data-reward="card"`) : wandRow(o.wand, `id="rw${i}" data-reward="wand"`, 'New wand: ' + o.wand.name)).join('')}</div><button class="btn sub" id="skip">Skip</button>`);
+  panel(`<h2>${title}</h2><p class="small">Choose one${full ? ' · satchel full: a page will replace slot 8' : ''}</p><div class="cards">${opts.map((o, i) => o.card ? cardRow(o.card, `id="rw${i}" data-reward="card"`) : wandRow(o.wand, `id="rw${i}" data-reward="wand"`, 'New grimoire: ' + o.wand.name)).join('')}</div><button class="btn sub" id="skip">Skip</button>`);
   opts.forEach((o, i) => on('rw' + i, () => {
-    if (o.card) { if (!bagAdd(o.card)) G.bag[7] = o.card; toast(CARDS[o.card].icon + ' ' + CARDS[o.card].name + ' added to your bag'); advance(); }
+    if (o.card) { if (!bagAdd(o.card)) G.bag[7] = o.card; toast(CARDS[o.card].icon + ' ' + CARDS[o.card].name + ' added to your satchel'); advance(); }
     else takeWand(o.wand, advance);
   }));
   on('skip', advance);
 }
 function takeWand(w, then) {
-  if (G.wands.length < 2) { G.wands.push(w); toast('🪄 ' + w.name + ' — swap with ⇄ / Q'); return then(); }
-  panel(`<h2>Your hands are full</h2><p>Replace which wand? Its cards go to your bag if there is room.</p>${G.wands.map((x, i) => wandRow(x, `id="rep${i}"`, 'Replace ' + x.name)).join('')}<button class="btn sub" id="keep">Keep both, leave the new wand</button>`);
+  if (G.wands.length < 2) { G.wands.push(w); toast('📖 ' + w.name + ' — swap with ⇄ / Q'); return then(); }
+  panel(`<h2>You can only carry two!</h2><p>Replace which grimoire? Its pages go to your satchel if there is room.</p>${G.wands.map((x, i) => wandRow(x, `id="rep${i}"`, 'Replace ' + x.name)).join('')}<button class="btn sub" id="keep">Keep both, leave the new grimoire</button>`);
   G.wands.forEach((x, i) => on('rep' + i, () => { x.slots.filter(Boolean).forEach(bagAdd); G.wands[i] = w; then(); }));
   on('keep', then);
 }
 function shrine() {
   mode = 'pick'; const heal = Math.round(G.maxFlame * 0.35);
-  panel(`<h2>⛪ Forgotten Shrine</h2><p>Candles gutter before a faceless saint. You may also rework your wands here.</p>
-  <button class="btn sub" id="edit">🪄 Edit wands</button>
-  <button class="btn" id="rest">Rest — restore ${heal} flame</button>
-  <button class="btn" id="pray">Pray — a random card, lose 10 max flame</button>`);
+  panel(`<h2>⛩ Ancient Altar</h2><p>A glowing sigil-stone hums with old magic. You can rebind your grimoire here.</p>
+  <button class="btn sub" id="edit">📖 Edit grimoire</button>
+  <button class="btn hot" id="rest">Meditate — restore ${heal} HP</button>
+  <button class="btn" id="pray">Pray — a random page, lose 10 max HP</button>`);
   on('edit', () => editor(shrine));
   on('rest', () => { G.flame = Math.min(G.maxFlame, G.flame + heal); advance(); });
   on('pray', () => { const id = pick(CARD_POOL); bagAdd(id); toast(CARDS[id].icon + ' ' + CARDS[id].name); G.maxFlame -= 10; G.flame = Math.min(G.flame, G.maxFlame); advance(); });
@@ -383,8 +453,8 @@ function merchant() {
   const ch = cardChoices(4, true), prices = ch.map(id => Math.round((CARDS[id].t === 'proj' ? 16 : 12) + rnd(0, 10)));
   let wnd = randomWand(G.step + 1); const wp = 35;
   const draw = () => {
-    panel(`<h2>⚖ The Ash Merchant</h2><p>"Your flame for my spells, pilgrim. Burn bright… or burn out."</p><p>Flame: <b style="color:#ffcf85">${Math.ceil(G.flame)}</b>/${G.maxFlame} · Bag ${G.bag.filter(Boolean).length}/8</p><div class="cards">${ch.map((id, i) => id ? cardRow(id, `id="buy${i}" ${G.flame <= prices[i] || !G.bag.includes(null) ? 'disabled' : ''}`, CARDS[id].name + ' — ' + prices[i] + ' 🔥') : '').join('')}
-    ${wnd ? wandRow(wnd, `id="buyW" ${G.flame <= wp ? 'disabled' : ''}`, wnd.name + ' — ' + wp + ' 🔥') : ''}</div><button class="btn sub" id="edit">🪄 Edit wands</button><button class="btn" id="leave">Leave</button>`);
+    panel(`<h2>⚖ Wandering Peddler</h2><p>"Pages for a bit of your life force, young mage! Fair trade, heh."</p><p class="stat">HP ${Math.ceil(G.flame)}/${G.maxFlame} · Satchel ${G.bag.filter(Boolean).length}/8</p><div class="cards">${ch.map((id, i) => id ? cardRow(id, `id="buy${i}" ${G.flame <= prices[i] || !G.bag.includes(null) ? 'disabled' : ''}`, CARDS[id].name + ' — ' + prices[i] + ' HP') : '').join('')}
+    ${wnd ? wandRow(wnd, `id="buyW" ${G.flame <= wp ? 'disabled' : ''}`, wnd.name + ' — ' + wp + ' HP') : ''}</div><button class="btn sub" id="edit">📖 Edit grimoire</button><button class="btn" id="leave">Leave</button>`);
     ch.forEach((id, i) => id && on('buy' + i, () => { G.flame -= prices[i]; bagAdd(id); ch[i] = null; draw(); }));
     on('buyW', () => { G.flame -= wp; const w = wnd; wnd = null; takeWand(w, draw); });
     on('edit', () => editor(draw));
@@ -395,31 +465,24 @@ function merchant() {
 function treasure() {
   mode = 'pick';
   const avail = CURSES.filter(c => !curse(c.id)), cs = avail.length ? pick(avail) : null;
-  panel(`<h2>⚰ Cursed Reliquary</h2><p>A coffin chained shut. Something inside hums with power.</p>
-  ${cs ? `<div class="card curse"><span class="ic">${cs.icon}</span><div><b>${cs.name}</b><span>${cs.desc} Embers +50%, and rewards may hold cursed cards and better wands.</span></div></div><button class="btn" id="take">Accept the curse — open it</button>` : ''}
+  panel(`<h2>📕 Forbidden Tome</h2><p>A chained book bound in black leather. It whispers your name.</p>
+  ${cs ? `<div class="card curse"><span class="ic">${cs.icon}</span><div><b>${cs.name}</b><span>${cs.desc} Shards +50%, and rewards may hold forbidden pages and better grimoires.</span></div></div><button class="btn" id="take">Accept the hex — open it</button>` : ''}
   <button class="btn sub" id="leave">Leave it sealed</button>`);
-  on('take', () => { G.curses.push(cs.id); toast(cs.icon + ' ' + cs.name); reward('The reliquary opens', 0.5); });
+  on('take', () => { G.curses.push(cs.id); toast(cs.icon + ' ' + cs.name); reward('The tome unlocks!', 0.5); });
   on('leave', advance);
 }
 function die(abandon) {
   mode = 'dead'; room = null; HUD.classList.add('hidden'); clearRun();
-  const gained = Math.floor(G.embersRun);
-  camp.embers += gained; camp.total += gained; camp.best = Math.max(camp.best, G.step);
-  if (G.daily) { const k = todayKey(); camp.dailyBest[k] = Math.max(camp.dailyBest[k] || 0, G.step); }
+  const gained = Math.floor(G.embersRun), d = G.floor >= ENDLESS_START ? depthOf() : 0;
+  camp.embers += gained; camp.total += gained; camp.best = Math.max(camp.best, Math.min(4, G.floor + (d ? 0 : 0)));
+  if (d) camp.bestDepth = Math.max(camp.bestDepth || 0, d - 1);
+  if (G.daily) { const k = todayKey(); camp.dailyBest[k] = Math.max(camp.dailyBest[k] || 0, G.floor + 1); }
   saveCamp();
-  panel(`<h1>${abandon ? 'ABANDONED' : 'THE FLAME DIES'}</h1><p>You reached room ${G.step + 1} of ${G.map.length} and slew ${G.kills}.</p>
-  <p>🔥 ${gained} embers carried back to camp.</p>${!camp.witch && camp.embers >= WITCH_COST ? '<p style="color:#ffb347">You can now unlock the Lantern Witch!</p>' : ''}<button class="btn" id="camp">Return to camp</button>`);
+  panel(`<div class="sfx big">${abandon ? 'RETREAT!' : 'DEFEATED...'}</div><p>${d ? 'You fell at Endless depth ' + d : 'You fell on floor ' + (G.floor + 1) + ' (' + biome().name + '), room ' + (G.step + 1)} after defeating ${G.kills} foes.</p>
+  <p class="stat">✦ ${gained} mana shards carried back to the Mage Hall.</p>${!camp.witch && camp.embers >= WITCH_COST ? '<p class="stat">You can now recruit Lumi Vesper!</p>' : ''}<button class="btn hot" id="camp">Return to the Mage Hall</button>`, 'title');
   on('camp', showCamp);
 }
-function win() {
-  mode = 'win'; HUD.classList.add('hidden'); clearRun();
-  const gained = Math.floor(G.embersRun + 40 * (1 + .5 * G.curses.length));
-  camp.embers += gained; camp.total += gained; camp.best = Math.max(camp.best, G.map.length);
-  if (G.daily) { const k = todayKey(); camp.dailyBest[k] = Math.max(camp.dailyBest[k] || 0, G.map.length); }
-  saveCamp();
-  panel(`<h1>FLOOR CLEARED</h1><p>The Bell-Warden falls silent. Deeper floors await (coming soon).</p><p>🔥 ${gained} embers carried back to camp.</p><button class="btn" id="camp">Return to camp</button>`);
-  on('camp', showCamp);
-}
+function win() { victory(); }
 
 // ---------- wand editor (drag & drop, touch + mouse) ----------
 let edWand = 0, edSel = null, preview = null, edBack = null;
@@ -428,16 +491,16 @@ function editor(back) {
   mode = mode === 'room' ? mode : 'edit';
   edWand = Math.min(edWand, G.wands.length - 1);
   const w = G.wands[edWand];
-  panel(`<h2>🪄 Wand Editor</h2>
+  panel(`<h2>📖 Grimoire</h2>
   ${G.wands.length > 1 ? `<div class="tabs">${G.wands.map((x, i) => `<button class="tab ${i === edWand ? 'on' : ''}" id="wt${i}">${x.name}</button>`).join('')}</div>` : `<p class="small">${w.name}</p>`}
   <p class="small">delay ${w.delay}s · recharge ${w.recharge}s · mana ${w.maxMana} (+${w.regen}/s) · ${w.slots.length} slots</p>
   <div class="slots wand" id="wslots">${w.slots.map((id, i) => `<div class="slot" data-loc="w:${i}">${cardChip(id)}</div>`).join('')}</div>
   <canvas id="pv" width="300" height="120"></canvas>
   <p class="cast" id="castDesc">${describeCast(w)}</p>
-  <p class="small">Bag</p>
+  <p class="small">Satchel</p>
   <div class="slots bag" id="bslots">${G.bag.map((id, i) => `<div class="slot" data-loc="b:${i}">${cardChip(id)}</div>`).join('')}</div>
-  <p class="info" id="info">Drag cards between the bag and the wand (or tap one, then tap a slot). Read left→right: modifiers apply to the next projectile; multicasts fire the next N together.</p>
-  <div class="legend"><span class="t-proj">Projectile</span><span class="t-mod">Modifier</span><span class="t-multi">Multicast</span><span class="t-trig">Trigger</span><span class="t-curse">Cursed</span><span class="t-rare">Rare</span></div>
+  <p class="info" id="info">Drag pages between your satchel and grimoire (or tap one, then a slot). Read left→right: glyphs power up the next attack; chants cast the next N pages together.</p>
+  <div class="legend"><span class="t-proj">Attack</span><span class="t-mod">Glyph</span><span class="t-multi">Chant</span><span class="t-trig">Trigger</span><span class="t-curse">Forbidden</span><span class="t-rare">Rare</span></div>
   <button class="btn" id="done">Done</button>`, 'wide');
   G.wands.forEach((x, i) => on('wt' + i, () => { edWand = i; edSel = null; editor(); }));
   on('done', () => { saveRun(); const b = edBack; edBack = null; edSel = null; b(); });
@@ -492,12 +555,12 @@ function tickPreview(dt, t) {
   pv.dps = pv.dps.filter(e => pv.t - e.t < 3);
   // draw
   const g = pv.ctx; cx = g; g.setTransform(pv.pd, 0, 0, pv.pd, 0, 0);
-  g.fillStyle = '#1a1813'; g.fillRect(0, 0, 300, 120); g.strokeStyle = 'rgba(0,0,0,.4)'; for (let x = 0; x < 300; x += 30) { g.beginPath(); g.moveTo(x, 20); g.lineTo(x, 120); g.stroke(); }
+  g.fillStyle = '#f6eedb'; g.fillRect(0, 0, 300, 120); g.fillStyle = '#e8dcc0'; g.fillRect(0, 96, 300, 24); g.strokeStyle = 'rgba(20,16,26,.12)'; for (let x = 0; x < 300; x += 30) { g.beginPath(); g.moveTo(x, 20); g.lineTo(x, 120); g.stroke(); }
   drawPatches(wd); drawFoe(d, t);
   light(34, 70, 40, '255,150,60', .8); glowDot(34, 70, 4, '#fff0c0', 'rgba(255,150,60,.45)');
   drawShots(wd); drawFx(wd);
-  g.fillStyle = '#d6b98c'; g.font = '11px Georgia'; g.textBaseline = 'top';
-  g.fillText('Preview · DPS ≈ ' + Math.round(pv.dps.reduce((s, e) => s + e.d, 0) / 3) + ' · mana ' + Math.floor(wn.mana) + '/' + wn.maxMana, 6, 4);
+  g.fillStyle = INK; g.font = 'bold 11px Impact, "Arial Black", sans-serif'; g.textBaseline = 'top';
+  g.fillText('Training dummy · DPS ≈ ' + Math.round(pv.dps.reduce((s, e) => s + e.d, 0) / 3) + ' · mana ' + Math.floor(wn.mana) + '/' + wn.maxMana, 6, 4);
   cx = mainCx;
 }
 
@@ -511,31 +574,32 @@ const FOES = {
 };
 function startRoom(kind) {
   mode = 'room'; paused = false; closeUI(); HUD.classList.remove('hidden');
-  const A = arena();
+  const A = arena(); if (!bg) buildBG();
   room = { kind, t: 0, bounds: A, foes: [], shots: [], eshots: [], parts: [], drops: [], fxs: [], patches: [], wisps: [], waves: [], done: false, doneT: 0, caster: P, onHeal: n => { G.flame = Math.min(G.maxFlame, G.flame + n); } };
   for (const w of G.wands) { w.mana = w.maxMana; w.idx = 0; w.cd = 0.4; }
   P.x = (A.x0 + A.x1) / 2; P.y = A.y1 - 60; P.vx = P.vy = 0; P.inv = 1; P.dodgeT = 0; P.skillCd = 0; P.dodgeCd = 0;
-  const leg = curse('legion') ? 1.4 : 1, tier = 1 + G.step * 0.12;
-  if (kind === 'boss') spawn('warden', (A.x0 + A.x1) / 2, A.y0 + 90, tier);
+  const leg = curse('legion') ? 1.4 : 1;
+  if (kind === 'boss') { spawn('warden', (A.x0 + A.x1) / 2, A.y0 + 100, difficulty()); room.boss = true; impact(.12); sfx(W / 2, H * .35, biome().boss.toUpperCase() + '!', '#ffffff', 22); }
   else {
-    const n = Math.round((5 + G.step * 1.3) * leg);
+    const n = Math.round((5 + G.step * 1.2 + Math.min(G.floor, 8) * 1.5) * leg);
     room.waves = [Math.ceil(n * 0.55), Math.floor(n * 0.45)];
-    room.kindsPool = G.step < 1 ? ['husk', 'husk', 'bat'] : ['husk', 'husk', 'bat', 'cultist'];
+    room.kindsPool = G.floor === 0 && G.step < 1 ? ['husk', 'husk', 'bat'] : ['husk', 'husk', 'bat', 'cultist'];
     room.elite = kind === 'elite'; nextWave();
+    toast(kind === 'elite' ? '💀 ELITE!' : '⚔ BATTLE!', 1200);
   }
-  toast(kind === 'boss' ? '🔔 THE BELL-WARDEN' : kind === 'elite' ? '💀 An elite stirs' : '⚔ The hollow rise', 1400);
 }
 function nextWave() {
-  const A = arena(), tier = 1 + G.step * 0.12, n = room.waves.shift();
+  const A = arena(), tier = difficulty(), n = room.waves.shift();
   for (let i = 0; i < n; i++) { const side = Math.floor(rnd(3)); spawn(pick(room.kindsPool), side === 0 ? rnd(A.x0 + 20, A.x1 - 20) : side === 1 ? A.x0 + 20 : A.x1 - 20, side === 0 ? A.y0 + 20 : rnd(A.y0 + 20, (A.y0 + A.y1) / 2), tier); }
   if (room.elite && room.waves.length === 0) spawn('husk', (A.x0 + A.x1) / 2, A.y0 + 40, tier, true);
 }
 function spawn(type, x, y, tier, elite) {
-  const f = FOES[type], hpm = (curse('iron') ? 1.4 : 1) * tier * (elite ? 7 : 1);
-  room.foes.push({ type, x, y, hp: f.hp * hpm, max: f.hp * hpm, spd: f.spd * (elite ? 0.85 : 1), r: f.r * (elite ? 1.8 : 1), dmg: f.dmg * (curse('wrath') ? 1.35 : 1) * (elite ? 1.6 : 1), elite: !!elite, boss: !!f.boss, ember: f.ember * (elite ? 6 : 1), burn: 0, hit: 0, t: fx() * 9, atk: rnd(1, 2.5), kx: 0, ky: 0, spawnT: 0.5, phase: 0, frozen: 0 });
+  const f = FOES[type], hpm = (curse('iron') ? 1.4 : 1) * tier * (elite ? 7 : 1), dm = 1 + G.floor * .22;
+  room.foes.push({ type, x, y, hp: f.hp * hpm, max: f.hp * hpm, spd: f.spd * (elite ? 0.85 : 1) * (1 + Math.min(G.floor, 6) * .05), r: f.r * (elite ? 1.8 : 1), dmg: f.dmg * dm * (curse('wrath') ? 1.35 : 1) * (elite ? 1.6 : 1), elite: !!elite, boss: !!f.boss, ember: f.ember * (elite ? 6 : 1), burn: 0, hit: 0, t: fx() * 9, atk: f.boss ? .8 : rnd(1, 2.5), kx: 0, ky: 0, spawnT: 0.5, phase: 0, frozen: 0, poison: 0 });
 }
 function killFoe(world, f) {
   f.dead = true; if (world !== room) return; G.kills++;
+  if (f.boss) { impact(.2); shake = 14; sfx(f.x, f.y - 60, 'KA-BOOM!!', '#ffe14a', 30); room.eshots.length = 0; for (const o of room.foes) if (!o.dead && o !== f) killFoe(world, o); } else if (f.elite || fx() < .25) sfx(f.x, f.y - f.r * 2, pick(['SLASH!', 'WHAM!', 'POW!', 'KRAK!']), '#ffffff', f.elite ? 22 : 14);
   const n = Math.max(1, Math.round(f.ember * (1 + .5 * G.curses.length) / 2));
   for (let i = 0; i < n; i++) room.drops.push({ x: f.x + (fx() - .5) * 20, y: f.y + (fx() - .5) * 20, vx: (fx() - .5) * 120, vy: (fx() - .5) * 120, t: 0 });
   for (let i = 0; i < 14; i++) room.parts.push({ x: f.x, y: f.y, vx: (fx() - .5) * 220, vy: (fx() - .5) * 220, life: .6, c: i % 2 ? '#ff8a2a' : '#3a3428', s: 3 });
@@ -549,20 +613,20 @@ function payFlame(n) { G.flame -= n; if (G.flame <= 1) G.flame = 1; } // bloodwa
 function dodge() {
   if (mode !== 'room' || P.dodgeCd > 0 || paused) return;
   let dx = input.dx, dy = input.dy; if (!dx && !dy) { dx = Math.cos(P.face); dy = Math.sin(P.face); }
-  const l = Math.hypot(dx, dy) || 1; P.vx = dx / l * 520; P.vy = dy / l * 520; P.dodgeT = 0.22; P.dodgeCd = 1.3;
+  const l = Math.hypot(dx, dy) || 1; P.vx = dx / l * 520; P.vy = dy / l * 520; P.dodgeT = 0.22; P.dodgeCd = 1.3; speedT = .22; speedAng = Math.atan2(dy, dx); sfx(P.x, P.y - 50, 'WHOOSH!', '#bff2ff', 13);
 }
 function skill() {
   if (mode !== 'room' || P.skillCd > 0 || paused) return;
   P.skillCd = G.cls === 'witch' ? 9 : 7;
-  if (G.cls === 'witch') { room.wisps = [0, 1, 2].map(i => ({ a: i * TAU / 3, life: 6 })); toast('Wisps'); }
+  if (G.cls === 'witch') { room.wisps = [0, 1, 2].map(i => ({ a: i * TAU / 3, life: 6 })); sfx(P.x, P.y - 60, 'LANTERN LIGHTS!', '#bff2ff', 16); }
   else {
-    room.fxs.push({ type: 'ring', x: P.x, y: P.y, r: 10, R: 140, life: .5, c: '#ff9a3a' }); shake = 8;
+    room.fxs.push({ type: 'ring', x: P.x, y: P.y, r: 10, R: 140, life: .5, c: '#ff9a3a' }); room.fxs.push({ type: 'circle', x: P.x, y: P.y, r: 70, life: .5, c: '#ff5a1a' }); shake = 8; impact(.07); sfx(P.x, P.y - 60, 'FLARE BURST!', '#ff9a3a', 18);
     for (const f of room.foes) { const d = Math.hypot(f.x - P.x, f.y - P.y) || 1; if (d < 140) hurtFoe(room, f, 30, (f.x - P.x) / d * 260, (f.y - P.y) / d * 260); }
   }
 }
 function swapWand() {
   if (!G || G.wands.length < 2 || (mode !== 'room' && mode !== 'map')) return;
-  G.active = (G.active + 1) % G.wands.length; wand().cd = Math.max(wand().cd, .25); toast('🪄 ' + wand().name, 900);
+  G.active = (G.active + 1) % G.wands.length; wand().cd = Math.max(wand().cd, .25); toast('📖 ' + wand().name, 900);
 }
 let shake = 0;
 function update(dt) {
@@ -579,7 +643,8 @@ function update(dt) {
   for (const w of G.wands) { w.mana = Math.min(w.maxMana, w.mana + w.regen * dt); w.cd -= dt; }
   const w = wand(), t = nearestFoe(room, P.x, P.y);
   if (t) P.face = Math.atan2(t.y - P.y, t.x - P.x); else if (Math.hypot(P.vx, P.vy) > 1) P.face = Math.atan2(P.vy, P.vx);
-  if (t && w.cd <= 0 && mode === 'room') tryCast(room, w, P.x + Math.cos(P.face) * 14, P.y - 14, Math.atan2(t.y - t.r * .8 - (P.y - 14), t.x - P.x), payFlame);
+  P.castT = Math.max(0, (P.castT || 0) - dt);
+  if (t && w.cd <= 0 && mode === 'room' && (P.castT = .18, room.fxs.push({ type: 'circle', x: P.x, y: P.y, r: 20, life: .3, c: '#ffe680' }), true)) tryCast(room, w, P.x + Math.cos(P.face) * 14, P.y - 14, Math.atan2(t.y - t.r * .8 - (P.y - 14), t.x - P.x), payFlame);
   for (const ws of room.wisps) { ws.life -= dt; ws.a += dt * 3.2; ws.x = P.x + Math.cos(ws.a) * 46; ws.y = P.y - 8 + Math.sin(ws.a) * 46; for (const f of room.foes) if (Math.hypot(f.x - ws.x, f.y - ws.y) < f.r + 8 && (f.wt || 0) <= 0) { hurtFoe(room, f, 10); f.burn = 2; f.wt = 0.3; } }
   room.wisps = room.wisps.filter(x => x.life > 0);
   updateShots(room, dt);
@@ -615,19 +680,28 @@ function update(dt) {
   if (!room.done && room.foes.length === 0 && mode === 'room') {
     if (room.waves.length) nextWave(); else { room.done = true; room.doneT = 0; toast(room.kind === 'boss' ? 'The bell is silenced' : 'Room cleared'); }
   }
-  if (room.done) { room.doneT += dt; if (room.doneT > 1.2 && room.drops.length === 0) { const k = room.kind; room = null; HUD.classList.add('hidden'); if (k === 'boss') win(); else reward(k === 'elite' ? 'Elite slain — claim a reward' : 'Claim a reward', k === 'elite' ? .6 : .25); } }
+  if (room.done) { room.doneT += dt; if (room.doneT > 1.2 && room.drops.length === 0) { const k = room.kind; room = null; HUD.classList.add('hidden'); if (k === 'boss') bossDown(); else reward(k === 'elite' ? 'Elite slain — claim a reward' : 'Claim a reward', k === 'elite' ? .6 : .25); } }
 }
 function bossAI(f, dt) {
-  if (f.hp / f.max < .5 && f.phase === 0) { f.phase = 1; toast('The Warden tolls in fury'); shake = 10; }
-  f.atk -= dt;
+  const B = biome(), wr = (curse('wrath') ? 1.35 : 1) * (1 + G.floor * .2), A = arena();
+  if (f.hp / f.max < .5 && f.phase === 0) { f.phase = 1; impact(.15); sfx(f.x, f.y - 80, 'RAGE!!', '#ff2a4a', 26); shake = 10; }
+  const shoot = (a, sp, d = 9) => room.eshots.push({ x: f.x, y: f.y - 36, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 4, dmg: d * wr, col: B.lamp });
+  f.atk -= dt; f.spin = (f.spin || 0) + dt * (f.phase ? 2.6 : 1.8);
+  const pat = B.pattern;
+  if (pat === 'spiral' || (pat === 'chaos' && f.phase)) { f.st = (f.st || 0) - dt; if (f.st <= 0) { f.st = f.phase ? .09 : .14; shoot(f.spin * 2.2, 130, 7); if (f.phase) shoot(f.spin * 2.2 + Math.PI, 130, 7); } }
   if (f.atk <= 0) {
-    const n = f.phase ? 16 : 10; f.atk = f.phase ? 2.2 : 3;
-    for (let i = 0; i < n; i++) { const a = i / n * TAU + f.t; room.eshots.push({ x: f.x, y: f.y - 20, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120, life: 4, dmg: 9 * (curse('wrath') ? 1.35 : 1) }); }
-    room.fxs.push({ type: 'ring', x: f.x, y: f.y - 20, r: 10, R: 70, life: .4, c: '#c8b27a' });
-    if (room.foes.length < 5) { const A = arena(); spawn(f.phase ? 'bat' : 'husk', rnd(A.x0 + 30, A.x1 - 30), A.y0 + 30, 1 + G.step * .12); }
+    f.atk = f.phase ? 2 : 2.8;
+    room.fxs.push({ type: 'circle', x: f.x, y: f.y, r: 50, life: .5, c: B.lamp });
+    if (pat === 'radial' || pat === 'chaos') { const n = f.phase ? 18 : 12; for (let i = 0; i < n; i++) shoot(i / n * TAU + f.t, 120); }
+    if (pat === 'aimed' || pat === 'chaos') { const a0 = Math.atan2(P.y - 14 - (f.y - 36), P.x - f.x); for (let i = -2; i <= 2; i++) shoot(a0 + i * .18, 190, 10); if (f.phase) setTimeout(() => { if (room && !f.dead) for (let i = -3; i <= 3; i++) shoot(a0 + i * .14, 160, 8); }, 400); }
+    if (pat === 'spiral') { for (let i = 0; i < 6; i++) shoot(i / 6 * TAU + f.spin, 90, 8); }
+    if (room.foes.length < (pat === 'chaos' ? 7 : 5)) spawn(f.phase ? 'bat' : (pat === 'aimed' ? 'cultist' : 'husk'), rnd(A.x0 + 30, A.x1 - 30), A.y0 + 30, difficulty() * .8);
   }
 }
-
+// ---------- anime FX helpers ----------
+let impactT = 0, speedT = 0, speedAng = 0;
+function impact(d) { impactT = Math.max(impactT, d); }
+function sfx(x, y, txt, col, size = 16) { const w = room || (preview && preview.world); if (!w) return; w.fxs.push({ type: 'sfx', x, y, txt, col, size, life: .7, rot: (fx() - .5) * .4 }); }
 // ---------- input ----------
 const input = { dx: 0, dy: 0, keys: {}, stick: null };
 addEventListener('keydown', e => { input.keys[e.code] = true; if (e.code === 'Space') { dodge(); e.preventDefault(); } if (e.code === 'KeyE') skill(); if (e.code === 'KeyQ') swapWand(); if (e.code === 'Escape' && mode === 'room') togglePause(); keyDir(); });
@@ -643,7 +717,7 @@ function togglePause() {
   if (mode !== 'room') return;
   paused = !paused;
   if (!paused) return closeUI();
-  panel(`<h2>Paused</h2><button class="btn" id="res">Resume</button><button class="btn sub" id="ab">Abandon run</button><p class="small">Wands can be edited between rooms and at shrines.</p>`);
+  panel(`<h2>Paused</h2><button class="btn" id="res">Resume</button><button class="btn sub" id="ab">Abandon run</button><p class="small">Grimoires can be edited between rooms and at altars.</p>`);
   on('res', togglePause); on('ab', () => { paused = false; closeUI(); die(true); });
 }
 
@@ -657,6 +731,8 @@ function drawShots(wd) {
     const a = Math.atan2(b.vy, b.vx), x = b.x, y = b.y, r = b.r;
     if (lights && b.novaR === undefined) light(x, y, 14 + r * 3, b.lt || '255,200,120', .55);
     cx.save(); cx.translate(x, y); cx.lineJoin = 'round';
+    if (!['nova', 'meteor', 'lance', 'bolt', 'chain', 'ice', 'fireball', 'missile'].includes(b.kind)) { cx.fillStyle = INK; cx.beginPath(); cx.arc(0, 0, Math.max(2, r) * (b.kind === 'saw' ? 1.45 : 1) + 1.8, 0, TAU); cx.fill(); }
+    else if (b.kind !== 'nova') { cx.strokeStyle = INK; cx.lineWidth = 4.5; cx.rotate(a); cx.beginPath(); cx.moveTo(-r * 3, 0); cx.lineTo(r * 2, 0); cx.stroke(); cx.rotate(-a); }
     switch (b.kind) {
       case 'fireball': cx.rotate(a); cx.fillStyle = '#c8301a'; cx.beginPath(); cx.moveTo(-r * 3.2, 0); cx.quadraticCurveTo(-r, -r * 1.2, 0, -r); cx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2); cx.quadraticCurveTo(-r, r * 1.2, -r * 3.2, 0); cx.fill(); glowDot(0, 0, r * .75, '#ffe08a', '#ff7a1a'); break;
       case 'ice': cx.rotate(a); cx.fillStyle = '#7ac8ff'; cx.beginPath(); cx.moveTo(r * 2.4, 0); cx.lineTo(-r, -r); cx.lineTo(-r * 1.6, 0); cx.lineTo(-r, r); cx.closePath(); cx.fill(); cx.fillStyle = '#eaf8ff'; cx.beginPath(); cx.moveTo(r * 2.2, 0); cx.lineTo(-r * .6, -r * .4); cx.lineTo(-r * .2, 0); cx.fill(); break;
@@ -685,9 +761,11 @@ function drawShots(wd) {
 function drawFx(wd) {
   for (const f of wd.fxs) {
     cx.globalAlpha = Math.min(1, f.life * 3);
-    if (f.type === 'ring') { cx.strokeStyle = f.c; cx.lineWidth = 2.5; cx.beginPath(); cx.arc(f.x, f.y - 10, f.r, 0, TAU); cx.stroke(); }
+    if (f.type === 'ring') { cx.strokeStyle = INK; cx.lineWidth = 5; cx.beginPath(); cx.arc(f.x, f.y - 10, f.r, 0, TAU); cx.stroke(); cx.strokeStyle = f.c; cx.lineWidth = 2.5; cx.beginPath(); cx.arc(f.x, f.y - 10, f.r, 0, TAU); cx.stroke(); }
     if (f.type === 'boom') { f.r += (f.R - f.r) * .35; cx.fillStyle = 'rgba(255,120,30,.25)'; cx.beginPath(); cx.arc(f.x, f.y, f.r, 0, TAU); cx.fill(); cx.strokeStyle = '#ffd070'; cx.lineWidth = 3; cx.stroke(); cx.fillStyle = '#fff0c0'; cx.beginPath(); cx.arc(f.x, f.y, f.r * .3 * f.life * 3, 0, TAU); cx.fill(); }
     if (f.type === 'bolt') { cx.strokeStyle = '#7aa0ff'; cx.lineWidth = 3.5; cx.beginPath(); cx.moveTo(f.x, f.y - 12); const pts = []; for (let i = 1; i < 6; i++) { const k = i / 6; pts.push([f.x + (f.x2 - f.x) * k + (fx() - .5) * 14, f.y - 12 + (f.y2 - f.y) * k + (fx() - .5) * 14]); } pts.forEach(q => cx.lineTo(q[0], q[1])); cx.lineTo(f.x2, f.y2 - 12); cx.stroke(); cx.strokeStyle = '#ffffff'; cx.lineWidth = 1.3; cx.stroke(); }
+    if (f.type === 'circle') { drawSpellCircle(f.x, f.y, f.r * (1.3 - f.life), f.c, f.life * 4, Math.min(1, f.life * 4)); }
+    if (f.type === 'sfx') { const k = 1 + Math.max(0, f.life - .55) * 4; cx.save(); cx.translate(f.x, f.y - (0.7 - f.life) * 16); cx.rotate(f.rot); cx.scale(k, k); cx.font = `bold ${f.size}px Impact, "Arial Black", sans-serif`; cx.textAlign = 'center'; cx.lineJoin = 'round'; cx.lineWidth = f.size / 4; cx.strokeStyle = INK; cx.strokeText(f.txt, 0, 0); cx.fillStyle = f.col; cx.fillText(f.txt, 0, 0); cx.restore(); }
     if (f.type === 'text') { cx.fillStyle = '#ffe08a'; cx.font = 'bold 10px Georgia'; cx.textAlign = 'center'; cx.fillText(f.txt, f.x, f.y - (1 - f.life) * 20); cx.textAlign = 'left'; f.life -= 0; }
   }
   cx.globalAlpha = 1;
@@ -705,39 +783,44 @@ function render(t) {
   for (const [x, y] of braziers()) drawBrazier(x, y, t);
   if (room) {
     drawPatches(room);
-    for (const e of room.drops) { const bob = Math.sin(e.t * 8 + e.x) * 1.5; cx.fillStyle = 'rgba(255,120,40,.35)'; cx.beginPath(); cx.moveTo(e.x, e.y - 8 + bob); cx.lineTo(e.x + 5.5, e.y + bob); cx.lineTo(e.x, e.y + 8 + bob); cx.lineTo(e.x - 5.5, e.y + bob); cx.fill(); cx.fillStyle = '#ff9a3a'; cx.beginPath(); cx.moveTo(e.x, e.y - 5 + bob); cx.lineTo(e.x + 3.5, e.y + bob); cx.lineTo(e.x, e.y + 5 + bob); cx.lineTo(e.x - 3.5, e.y + bob); cx.fill(); cx.fillStyle = '#fff0c0'; cx.fillRect(e.x - 1, e.y - 2 + bob, 2, 2); }
+    for (const e of room.drops) { const bob = Math.sin(e.t * 8 + e.x) * 1.5; cx.fillStyle = INK; cx.beginPath(); cx.moveTo(e.x, e.y - 8 + bob); cx.lineTo(e.x + 5.5, e.y + bob); cx.lineTo(e.x, e.y + 8 + bob); cx.lineTo(e.x - 5.5, e.y + bob); cx.fill(); cx.fillStyle = '#6af0ff'; cx.beginPath(); cx.moveTo(e.x, e.y - 5 + bob); cx.lineTo(e.x + 3.5, e.y + bob); cx.lineTo(e.x, e.y + 5 + bob); cx.lineTo(e.x - 3.5, e.y + bob); cx.fill(); cx.fillStyle = '#fff0c0'; cx.fillRect(e.x - 1, e.y - 2 + bob, 2, 2); }
     const ents = room.foes.map(f => ({ y: f.y, d: () => { drawFoe(f, t); } }));
     ents.push({ y: P.y, d: () => drawPilgrim(P.x, P.y, t, G.cls, P.inv > 0 && Math.floor(t * 20) % 2 ? .4 : 1) });
     ents.sort((a, b) => a.y - b.y).forEach(e => e.d());
     drawShots(room);
-    for (const b of room.eshots) { light(b.x, b.y, 20, '255,40,30', .5); cx.fillStyle = '#5a0a0a'; cx.beginPath(); cx.arc(b.x, b.y, 6, 0, TAU); cx.fill(); glowDot(b.x, b.y, 3, '#ffb0a0', '#e02a1a'); }
-    for (const w of room.wisps) { light(w.x, w.y, 26, '150,220,255', .6); glowDot(w.x, w.y, 4, '#ffffff', 'rgba(140,220,255,.6)'); }
+    for (const b of room.eshots) { cx.fillStyle = INK; cx.beginPath(); cx.arc(b.x, b.y, 6.5, 0, TAU); cx.fill(); cx.fillStyle = b.col || '#ff2a5a'; cx.beginPath(); cx.arc(b.x, b.y, 4.8, 0, TAU); cx.fill(); cx.fillStyle = '#ffffff'; cx.beginPath(); cx.arc(b.x - 1.2, b.y - 1.2, 1.8, 0, TAU); cx.fill(); }
+    for (const w of room.wisps) { light(w.x, w.y, 26, '150,220,255', .6); cx.fillStyle = INK; cx.beginPath(); cx.arc(w.x, w.y, 6, 0, TAU); cx.fill(); glowDot(w.x, w.y, 3.5, '#ffffff', '#7ad8ff'); }
     drawFx(room);
   } else {
     if (ambient.length < 60) ambient.push({ x: fx() * W, y: H + 10, vy: -20 - fx() * 40, vx: (fx() - .5) * 15, s: 1 + fx() * 2 });
     drawPilgrim(W / 2, H * .82, t, G ? G.cls : 'pilgrim');
   }
-  for (const a of ambient) { a.x += a.vx / 60 + Math.sin(t + a.y * .02) * .3; a.y += a.vy / 60; cx.fillStyle = `rgba(255,${130 + a.s * 30 | 0},50,${.5 + Math.sin(t * 5 + a.x) * .3})`; cx.fillRect(a.x, a.y, a.s, a.s); }
+  for (const a of ambient) { a.x += a.vx / 60 + Math.sin(t + a.y * .02) * .3; a.y += a.vy / 60; cx.fillStyle = biome().lamp; cx.fillRect(a.x, a.y, a.s, a.s); }
   for (let i = ambient.length - 1; i >= 0; i--) if (ambient[i].y < -10) ambient.splice(i, 1);
   cx.restore();
-  cx.fillStyle = 'rgba(40,55,35,.08)'; cx.fillRect(0, 0, W, H);
   cx.setTransform(DPR, 0, 0, DPR, 0, 0); // screen space
+  if (speedT > 0 && room) { speedT -= 1 / 60; cx.strokeStyle = 'rgba(255,255,255,.75)'; cx.lineWidth = 2; cx.beginPath(); const c = Math.cos(speedAng), sn = Math.sin(speedAng); for (let i = 0; i < 26; i++) { const o = (fx() - .5) * Math.max(SW, SH) * 1.4, px = SW / 2 - sn * o, py = SH / 2 + c * o, L = 40 + fx() * 120, d0 = (fx() - .5) * SW; cx.moveTo(px + c * d0, py + sn * d0); cx.lineTo(px + c * (d0 - L), py + sn * (d0 - L)); } cx.stroke(); }
+  if (impactT > 0) { // manga impact frame: flash + radial ink speed lines
+    impactT -= 1 / 60; const cxp = SW / 2, cyp = SH * .45;
+    cx.fillStyle = 'rgba(255,255,255,.55)'; cx.fillRect(0, 0, SW, SH);
+    cx.fillStyle = INK; for (let i = 0; i < 48; i++) { const a = i / 48 * TAU + fx() * .05, r0 = Math.min(SW, SH) * (.32 + fx() * .12), r1 = Math.max(SW, SH); cx.beginPath(); cx.moveTo(cxp + Math.cos(a - .012) * r1, cyp + Math.sin(a - .012) * r1); cx.lineTo(cxp + Math.cos(a) * r0, cyp + Math.sin(a) * r0); cx.lineTo(cxp + Math.cos(a + .012) * r1, cyp + Math.sin(a + .012) * r1); cx.fill(); }
+  }
   if (room && G) drawHUD();
   if (input.stick) { const s = input.stick; cx.strokeStyle = 'rgba(255,180,90,.35)'; cx.lineWidth = 2; cx.beginPath(); cx.arc(s.ox, s.oy, 50, 0, TAU); cx.stroke(); cx.fillStyle = 'rgba(255,170,70,.45)'; cx.beginPath(); cx.arc(s.ox + clamp(input.dx, -1, 1) * 50, s.oy + clamp(input.dy, -1, 1) * 50, 20, 0, TAU); cx.fill(); }
   if (P.hurt > 0) { cx.fillStyle = `rgba(150,20,10,${P.hurt})`; cx.fillRect(0, 0, SW, SH); }
 }
 function bar(x, y, w, h, f, c1, c2, label) {
-  cx.fillStyle = 'rgba(10,8,6,.7)'; cx.fillRect(x, y, w, h);
-  const g = cx.createLinearGradient(x, 0, x + w, 0); g.addColorStop(0, c1); g.addColorStop(1, c2); cx.fillStyle = g; cx.fillRect(x + 2, y + 2, (w - 4) * clamp(f, 0, 1), h - 4);
-  cx.strokeStyle = '#6b4a26'; cx.strokeRect(x, y, w, h);
-  if (label) { cx.fillStyle = '#ffe9c0'; cx.font = 'bold 11px Georgia'; cx.textBaseline = 'middle'; cx.fillText(label, x + 6, y + h / 2 + .5); }
+  cx.fillStyle = INK; cx.fillRect(x - 2, y - 2, w + 4, h + 4);
+  cx.fillStyle = '#fffaf0'; cx.fillRect(x, y, w, h);
+  cx.fillStyle = c1; cx.fillRect(x, y, w * clamp(f, 0, 1), h); cx.fillStyle = c2; cx.fillRect(x, y, w * clamp(f, 0, 1), Math.max(2, h * .35));
+  if (label) { cx.font = 'bold 12px Impact, "Arial Black", sans-serif'; cx.textBaseline = 'middle'; cx.lineWidth = 3; cx.strokeStyle = INK; cx.strokeText(label, x + 6, y + h / 2 + 1); cx.fillStyle = '#fff'; cx.fillText(label, x + 6, y + h / 2 + 1); }
 }
 function drawHUD() {
   const x = 14, y = 14, w = Math.min(220, SW - 90), wn = wand();
-  bar(x, y, w, 16, G.flame / G.maxFlame, '#a8321e', '#ffb347', '🔥 ' + Math.ceil(G.flame) + '/' + G.maxFlame);
-  bar(x, y + 20, w * .7, 9, wn.mana / wn.maxMana, '#2a3a8a', '#7ab8ff');
-  cx.font = '12px Georgia'; cx.fillStyle = '#d6b98c'; cx.textBaseline = 'middle';
-  cx.fillText('🪄 ' + wn.name + (G.wands.length > 1 ? ' (' + (G.active + 1) + '/2)' : '') + '  ·  Room ' + (G.step + 1) + '/' + G.map.length + '  ·  ✦ ' + Math.floor(G.embersRun) + (G.curses.length ? '  ' + G.curses.map(c => CURSES.find(q => q.id === c).icon).join('') : ''), x, y + 42);
+  bar(x, y, w, 16, G.flame / G.maxFlame, '#ff2a5a', '#ff8aa8', 'HP ' + Math.ceil(G.flame) + '/' + G.maxFlame);
+  bar(x, y + 22, w * .7, 9, wn.mana / wn.maxMana, '#2a6aff', '#8ac8ff');
+  const txt = (G.floor >= ENDLESS_START ? 'ENDLESS · DEPTH ' + depthOf() : 'FLOOR ' + (G.floor + 1) + '/4') + ' · ROOM ' + (G.step + 1) + '/' + G.map.length + ' · ✦' + Math.floor(G.embersRun) + (G.curses.length ? ' ' + G.curses.map(c => CURSES.find(q => q.id === c).icon).join('') : '');
+  cx.font = 'bold 12px Impact, "Arial Black", sans-serif'; cx.textBaseline = 'middle'; cx.lineWidth = 3; cx.strokeStyle = INK; cx.strokeText(txt, x, y + 46); cx.fillStyle = '#fff'; cx.fillText(txt, x, y + 46);
   document.getElementById('dodgeBtn').classList.toggle('cd', P.dodgeCd > 0); document.getElementById('skillBtn').classList.toggle('cd', P.skillCd > 0);
   document.getElementById('swapBtn').classList.toggle('hidden', G.wands.length < 2);
 }
@@ -756,5 +839,5 @@ function frame(now) {
 }
 showCamp();
 requestAnimationFrame(frame);
-window.__ashen = { get G() { return G; }, get mode() { return mode; }, get room() { return room; }, get preview() { return preview; }, P, input, buildCast, describeCast, CARDS, editor, showMap };
+window.__ashen = { get G() { return G; }, get mode() { return mode; }, get room() { return room; }, get preview() { return preview; }, P, input, buildCast, describeCast, CARDS, editor, showMap, victory, bossDown, jump(fl, st) { G.floor = fl; G.step = 0; G.path = []; G.map = genMap(); G.step = st == null ? 0 : Math.min(st, G.map.length - 1); bg = null; showMap(); }, get FLOORS() { return FLOORS; } };
 window.__ready = true;
