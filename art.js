@@ -140,9 +140,10 @@ function drawGrimoire(x, y, cover, leaves, t, open) {
   cx.restore();
 }
 // mature mages (not chibi): tall proportions, long coats, small heads
+let MAGE_OV = null; // co-op: draw another player's mage (walk, face, castT, fl, hue, leaves)
 function drawPilgrim(x, y, t, cls, alpha = 1) {
-  const lumi = cls === 'witch', step = Math.sin(P.walk) * 3, bob = Math.abs(Math.sin(P.walk)) * -1.2;
-  const sd = Math.cos(P.face) >= 0 ? 1 : -1, fl = clamp(G ? G.flame / G.maxFlame : 1, .2, 1);
+  const Q = MAGE_OV || P, lumi = cls === 'witch', step = Math.sin(Q.walk) * 3, bob = Math.abs(Math.sin(Q.walk)) * -1.2;
+  const sd = Math.cos(Q.face) >= 0 ? 1 : -1, fl = MAGE_OV ? MAGE_OV.fl : clamp(G ? G.flame / G.maxFlame : 1, .2, 1);
   light(x + sd * 24, y - 44, 50 + 40 * fl, lumi ? '140,200,255' : '255,150,60', .75);
   cx.save(); cx.translate(x, y); cx.globalAlpha = alpha; cx.lineJoin = 'round'; cx.lineCap = 'round';
   cx.fillStyle = 'rgba(0,0,0,.5)'; ell(0, 2, 12, 4); cx.fill();
@@ -183,8 +184,8 @@ function drawPilgrim(x, y, t, cls, alpha = 1) {
   }
   cx.restore();
   // floating grimoire
-  const w = G && G.wands ? wand() : null;
-  drawGrimoire(x + sd * 24, y - 44, w ? `hsl(${w.hue},45%,${lumi ? 24 : 22}%)` : (lumi ? '#1e2a4a' : '#4a1612'), w ? leavesOf(w) : (lumi ? 3 : 1), t, P.castT > 0);
+  const w = MAGE_OV ? MAGE_OV : G && G.wands ? wand() : null;
+  drawGrimoire(x + sd * 24, y - 44, w ? `hsl(${w.hue},45%,${lumi ? 24 : 22}%)` : (lumi ? '#1e2a4a' : '#4a1612'), w ? (MAGE_OV ? MAGE_OV.leaves : leavesOf(w)) : (lumi ? 3 : 1), t, Q.castT > 0);
 }
 const FSKIN = [ // grounded, desaturated per-biome skins
   { a: '#4a5a3a', d: '#2e3a24', bone: '#b8b095', eye: '#c8ff5a', wing: '#2e3a28', robe: '#2a3a24', robeD: '#18241a', flame: '#9aff5a' },

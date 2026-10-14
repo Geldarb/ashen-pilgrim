@@ -70,3 +70,14 @@ b.t-rare{color:var(--c)}
 .btn.hot{border-color:#e0a040;background:linear-gradient(#6a4416,#3a2410);color:#fff0c8;box-shadow:0 0 14px rgba(255,170,60,.3)}
 .chip i{font-style:normal}
 .slots.wand{padding:5px;border:1px solid #8a6a3a;border-radius:8px;background:linear-gradient(90deg,#2a1610,#3a2016 47%,#140a08 50%,#3a2016 53%,#2a1610);box-shadow:inset 0 0 0 2px rgba(200,150,60,.18)}
+/* co-op lobby */
+.inp{display:block;width:100%;margin:6px 0;padding:11px;border-radius:10px;border:1px solid #8a5a2a;background:#120e09;color:#ffe9c0;font:inherit;font-size:16px;text-align:center;user-select:text;-webkit-user-select:text}
+.inp.code{letter-spacing:8px;text-transform:uppercase;font-size:22px;margin:0}
+.joinrow{display:flex;gap:8px;align-items:center;margin:8px 0}.joinrow .inp{flex:1}.joinrow .btn{width:auto;flex:none;margin:0;padding:12px 22px}
+.roomcode{font-size:46px;letter-spacing:12px;color:#f0b45a;text-shadow:0 0 14px #ff7a1a88;margin:2px 0 6px;user-select:text;-webkit-user-select:text}
+.linkline{word-break:break-all;user-select:text;-webkit-user-select:text}
+.roster{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0;text-align:left}
+.mate{padding:7px 9px;border:1px solid #6b4a26;border-radius:8px;background:#1f1811;font-size:13px;color:#e8d9bd;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.mate i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:#3a2a1a;vertical-align:0}
+.mate.empty{opacity:.4;border-style:dashed}
+.roster.small .mate{font-size:12px}

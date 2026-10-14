@@ -1,0 +1,10 @@
+{
+  "name": "grimoire-ascent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Grimoire Ascent: roguelike with online co-op (1-4 players)",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": { "express": "^4.21.2", "ws": "^8.18.0" }
+}

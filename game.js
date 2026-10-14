@@ -577,11 +577,11 @@ function startRoom(kind) {
   const A = arena(); if (!bg) buildBG();
   room = { kind, t: 0, bounds: A, foes: [], shots: [], eshots: [], parts: [], drops: [], fxs: [], patches: [], wisps: [], waves: [], done: false, doneT: 0, caster: P, onHeal: n => { G.flame = Math.min(G.maxFlame, G.flame + n); } };
   for (const w of G.wands) { w.mana = w.maxMana; w.idx = 0; w.cd = 0.4; }
-  P.x = (A.x0 + A.x1) / 2; P.y = A.y1 - 60; P.vx = P.vy = 0; P.inv = 1; P.dodgeT = 0; P.skillCd = 0; P.dodgeCd = 0;
+  P.x = (A.x0 + A.x1) / 2; P.y = A.y1 - 60; P.vx = P.vy = 0; P.inv = 1; P.dodgeT = 0; P.skillCd = 0; P.dodgeCd = 0; P.down = false;
   const leg = curse('legion') ? 1.4 : 1;
   if (kind === 'boss') { spawn('warden', (A.x0 + A.x1) / 2, A.y0 + 100, difficulty()); room.boss = true; impact(.12); sfx(W / 2, H * .35, biome().boss.toUpperCase() + '!', '#ffffff', 22); }
   else {
-    const n = Math.round((5 + G.step * 1.2 + Math.min(G.floor, 8) * 1.5) * leg);
+    const n = Math.round((5 + G.step * 1.2 + Math.min(G.floor, 8) * 1.5) * leg * (1 + .45 * (coopN() - 1)));
     room.waves = [Math.ceil(n * 0.55), Math.floor(n * 0.45)];
     room.kindsPool = G.floor === 0 && G.step < 1 ? ['husk', 'husk', 'bat'] : ['husk', 'husk', 'bat', 'cultist'];
     room.elite = kind === 'elite'; nextWave();
@@ -594,8 +594,8 @@ function nextWave() {
   if (room.elite && room.waves.length === 0) spawn('husk', (A.x0 + A.x1) / 2, A.y0 + 40, tier, true);
 }
 function spawn(type, x, y, tier, elite) {
-  const f = FOES[type], hpm = (curse('iron') ? 1.4 : 1) * tier * (elite ? 7 : 1), dm = 1 + G.floor * .22;
-  room.foes.push({ type, x, y, hp: f.hp * hpm, max: f.hp * hpm, spd: f.spd * (elite ? 0.85 : 1) * (1 + Math.min(G.floor, 6) * .05), r: f.r * (elite ? 1.8 : 1), dmg: f.dmg * dm * (curse('wrath') ? 1.35 : 1) * (elite ? 1.6 : 1), elite: !!elite, boss: !!f.boss, ember: f.ember * (elite ? 6 : 1), burn: 0, hit: 0, t: fx() * 9, atk: f.boss ? .8 : rnd(1, 2.5), kx: 0, ky: 0, spawnT: 0.5, phase: 0, frozen: 0, poison: 0 });
+  const f = FOES[type], hpm = (curse('iron') ? 1.4 : 1) * tier * (elite ? 7 : 1) * (1 + .6 * (coopN() - 1)), dm = 1 + G.floor * .22;
+  room.foes.push({ id: ++FID, type, x, y, hp: f.hp * hpm, max: f.hp * hpm, spd: f.spd * (elite ? 0.85 : 1) * (1 + Math.min(G.floor, 6) * .05), r: f.r * (elite ? 1.8 : 1), dmg: f.dmg * dm * (curse('wrath') ? 1.35 : 1) * (elite ? 1.6 : 1), elite: !!elite, boss: !!f.boss, ember: f.ember * (elite ? 6 : 1), burn: 0, hit: 0, t: fx() * 9, atk: f.boss ? .8 : rnd(1, 2.5), kx: 0, ky: 0, spawnT: 0.5, phase: 0, frozen: 0, poison: 0 });
 }
 function killFoe(world, f) {
   f.dead = true; if (world !== room) return; G.kills++;
@@ -605,9 +605,9 @@ function killFoe(world, f) {
   for (let i = 0; i < 14; i++) room.parts.push({ x: f.x, y: f.y, vx: (fx() - .5) * 220, vy: (fx() - .5) * 220, life: .6, c: i % 2 ? '#ff8a2a' : '#3a3428', s: 3 });
 }
 function hurtPlayer(d) {
-  if (P.inv > 0 || P.dodgeT > 0 || mode !== 'room') return;
+  if (P.inv > 0 || P.dodgeT > 0 || P.down || mode !== 'room') return;
   G.flame -= d; P.inv = 0.7; P.hurt = 0.25; shake = 6;
-  if (G.flame <= 0) { G.flame = 0; mode = 'dying'; setTimeout(() => die(false), 600); }
+  if (G.flame <= 0) { G.flame = 0; onZeroHp(); }
 }
 function payFlame(n) { G.flame -= n; if (G.flame <= 1) G.flame = 1; } // bloodwax can't kill you outright
 function dodge() {
@@ -629,6 +629,16 @@ function swapWand() {
   G.active = (G.active + 1) % G.wands.length; wand().cd = Math.max(wand().cd, .25); toast('📖 ' + wand().name, 900);
 }
 let shake = 0;
+// ---------- co-op hooks (overridden by coop.js; solo defaults) ----------
+let FID = 0;
+function coopN() { return 1; }
+function foeTarget(f) { return P; }
+function targets() { return P.down ? [] : [P]; }
+function hurtTarget(T, d) { if (T === P) hurtPlayer(d); }
+function collectDrop(T) { G.embersRun += 1; G.flame = Math.min(G.maxFlame, G.flame + 1.2); }
+function onZeroHp() { mode = 'dying'; setTimeout(() => die(false), 600); }
+function extraEnts() { return []; }
+function roomCleared(k) { room = null; HUD.classList.add('hidden'); if (k === 'boss') bossDown(); else reward(k === 'elite' ? 'Elite slain — claim a reward' : 'Claim a reward', k === 'elite' ? .6 : .25); }
 function update(dt) {
   if (mode !== 'room' && mode !== 'dying') return;
   if (paused) return;
@@ -636,7 +646,7 @@ function update(dt) {
   P.inv = Math.max(0, P.inv - dt); P.hurt = Math.max(0, P.hurt - dt); P.dodgeCd = Math.max(0, P.dodgeCd - dt); P.skillCd = Math.max(0, P.skillCd - dt);
   const spd = CLASSES[G.cls].speed;
   if (P.dodgeT > 0) { P.dodgeT -= dt; room.parts.push({ x: P.x, y: P.y - 8, vx: 0, vy: 0, life: .25, c: '#ff8a2a55', s: 9 }); }
-  else if (mode === 'room') { let dx = input.dx, dy = input.dy; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } P.vx = dx * spd; P.vy = dy * spd; if (l > .1) P.walk += dt * 10; }
+  else if (mode === 'room' && !P.down) { let dx = input.dx, dy = input.dy; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } P.vx = dx * spd; P.vy = dy * spd; if (l > .1) P.walk += dt * 10; }
   else P.vx = P.vy = 0;
   P.x = clamp(P.x + P.vx * dt, A.x0 + P.r, A.x1 - P.r); P.y = clamp(P.y + P.vy * dt, A.y0 + P.r + 10, A.y1 - P.r);
   // wands: all regen mana, active one casts automatically at nearest foe
@@ -644,15 +654,15 @@ function update(dt) {
   const w = wand(), t = nearestFoe(room, P.x, P.y);
   if (t) P.face = Math.atan2(t.y - P.y, t.x - P.x); else if (Math.hypot(P.vx, P.vy) > 1) P.face = Math.atan2(P.vy, P.vx);
   P.castT = Math.max(0, (P.castT || 0) - dt);
-  if (t && w.cd <= 0 && mode === 'room' && (P.castT = .18, room.fxs.push({ type: 'circle', x: P.x, y: P.y, r: 20, life: .3, c: w.slots.includes('inverted') ? '#e8e4f0' : `hsl(${w.hue},80%,65%)` }), true)) tryCast(room, w, P.x + Math.cos(P.face) * 14, P.y - 14, Math.atan2(t.y - t.r * .8 - (P.y - 14), t.x - P.x), payFlame);
-  for (const ws of room.wisps) { ws.life -= dt; ws.a += dt * 3.2; ws.x = P.x + Math.cos(ws.a) * 46; ws.y = P.y - 8 + Math.sin(ws.a) * 46; for (const f of room.foes) if (Math.hypot(f.x - ws.x, f.y - ws.y) < f.r + 8 && (f.wt || 0) <= 0) { hurtFoe(room, f, 10); f.burn = 2; f.wt = 0.3; } }
+  if (t && w.cd <= 0 && mode === 'room' && !P.down && (P.castT = .18, room.fxs.push({ type: 'circle', x: P.x, y: P.y, r: 20, life: .3, c: w.slots.includes('inverted') ? '#e8e4f0' : `hsl(${w.hue},80%,65%)` }), true)) tryCast(room, w, P.x + Math.cos(P.face) * 14, P.y - 14, Math.atan2(t.y - t.r * .8 - (P.y - 14), t.x - P.x), payFlame);
+  for (const ws of room.wisps) { ws.life -= dt; ws.a += dt * 3.2; const o = ws.o || P; ws.x = o.x + Math.cos(ws.a) * 46; ws.y = o.y - 8 + Math.sin(ws.a) * 46; for (const f of room.foes) if (Math.hypot(f.x - ws.x, f.y - ws.y) < f.r + 8 && (f.wt || 0) <= 0) { hurtFoe(room, f, 10); f.burn = 2; f.wt = 0.3; } }
   room.wisps = room.wisps.filter(x => x.life > 0);
   updateShots(room, dt);
   for (const f of room.foes) {
     f.t += dt; f.hit = Math.max(0, f.hit - dt); f.wt = (f.wt || 0) - dt; f.frozen = Math.max(0, f.frozen - dt);
     if (f.spawnT > 0) { f.spawnT -= dt; continue; }
     tickStatus(room, f, dt);
-    const dx = P.x - f.x, dy = P.y - f.y, d = Math.hypot(dx, dy) || 1;
+    const T = foeTarget(f) || P, dx = T.x - f.x, dy = T.y - f.y, d = Math.hypot(dx, dy) || 1;
     let sp = f.spd * (f.frozen > 0 ? 0.3 : 1);
     if (FOES[f.type].ranged) { if (d < 160) sp = -sp; else if (d < 240) sp = 0; f.atk -= dt * (f.frozen > 0 ? .3 : 1); if (f.atk <= 0 && d < 380) { f.atk = rnd(1.8, 2.8); const a = Math.atan2(dy, dx); room.eshots.push({ x: f.x, y: f.y - 10, vx: Math.cos(a) * 150, vy: Math.sin(a) * 150, life: 3, dmg: f.dmg }); } }
     if (f.type === 'bat') sp *= 1 + .3 * Math.sin(f.t * 4);
@@ -660,17 +670,18 @@ function update(dt) {
     f.x += (dx / d * sp + f.kx) * dt; f.y += (dy / d * sp + f.ky) * dt + (f.type === 'bat' ? Math.sin(f.t * 7) * 30 * dt : 0);
     f.kx *= .86; f.ky *= .86;
     f.x = clamp(f.x, A.x0 + f.r, A.x1 - f.r); f.y = clamp(f.y, A.y0 + f.r, A.y1 - f.r);
-    if (d < f.r + P.r) hurtPlayer(f.dmg);
+    if (d < f.r + P.r) hurtTarget(T, f.dmg);
   }
   for (let i = 0; i < room.foes.length; i++) for (let j = i + 1; j < room.foes.length; j++) { const a = room.foes[i], b = room.foes[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), m = a.r + b.r; if (d < m && d > 0) { const p = (m - d) / 2 / d; if (!a.boss) { a.x -= dx * p; a.y -= dy * p; } if (!b.boss) { b.x += dx * p; b.y += dy * p; } } }
   room.foes = room.foes.filter(f => !f.dead);
-  for (const b of room.eshots) { b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; if (Math.hypot(b.x - P.x, b.y - (P.y - 8)) < P.r + 5) { hurtPlayer(b.dmg); b.life = 0; } }
+  for (const b of room.eshots) { b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; for (const T of targets()) if (b.life > 0 && Math.hypot(b.x - T.x, b.y - (T.y - 8)) < P.r + 5) { hurtTarget(T, b.dmg); b.life = 0; } }
   room.eshots = room.eshots.filter(b => b.life > 0 && b.x > A.x0 && b.x < A.x1 && b.y > A.y0 && b.y < A.y1);
   for (const e of room.drops) {
     e.t += dt; e.x += e.vx * dt; e.y += e.vy * dt; e.vx *= .9; e.vy *= .9;
-    const d = Math.hypot(P.x - e.x, P.y - e.y) || 1;
-    if (e.t > .4 && (d < 90 || room.done)) { e.x += (P.x - e.x) / d * 420 * dt; e.y += (P.y - e.y) / d * 420 * dt; }
-    if (d < 16) { e.got = true; G.embersRun += 1; G.flame = Math.min(G.maxFlame, G.flame + 1.2); }
+    let T = null, d = 1e9; for (const q of targets()) { const dd = Math.hypot(q.x - e.x, q.y - e.y); if (dd < d) { d = dd; T = q; } }
+    if (!T) continue; d = d || 1;
+    if (e.t > .4 && (d < 90 || room.done)) { e.x += (T.x - e.x) / d * 420 * dt; e.y += (T.y - e.y) / d * 420 * dt; }
+    if (d < 16) { e.got = true; collectDrop(T); }
   }
   room.drops = room.drops.filter(e => !e.got);
   for (const p of room.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .94; p.vy *= .94; p.life -= dt; }
@@ -680,7 +691,7 @@ function update(dt) {
   if (!room.done && room.foes.length === 0 && mode === 'room') {
     if (room.waves.length) nextWave(); else { room.done = true; room.doneT = 0; toast(room.kind === 'boss' ? 'The bell is silenced' : 'Room cleared'); }
   }
-  if (room.done) { room.doneT += dt; if (room.doneT > 1.2 && room.drops.length === 0) { const k = room.kind; room = null; HUD.classList.add('hidden'); if (k === 'boss') bossDown(); else reward(k === 'elite' ? 'Elite slain — claim a reward' : 'Claim a reward', k === 'elite' ? .6 : .25); } }
+  if (room.done) { room.doneT += dt; if (room.doneT > 1.2 && (room.drops.length === 0 || room.doneT > 6)) roomCleared(room.kind); }
 }
 function bossAI(f, dt) {
   const B = biome(), wr = (curse('wrath') ? 1.35 : 1) * (1 + G.floor * .2), A = arena();
@@ -797,6 +808,7 @@ function render(t) {
     drawPatches(room);
     for (const e of room.drops) { const bob = Math.sin(e.t * 8 + e.x) * 1.5; cx.fillStyle = 'rgba(255,120,40,.35)'; cx.beginPath(); cx.moveTo(e.x, e.y - 8 + bob); cx.lineTo(e.x + 5.5, e.y + bob); cx.lineTo(e.x, e.y + 8 + bob); cx.lineTo(e.x - 5.5, e.y + bob); cx.fill(); cx.fillStyle = '#ff9a3a'; cx.beginPath(); cx.moveTo(e.x, e.y - 5 + bob); cx.lineTo(e.x + 3.5, e.y + bob); cx.lineTo(e.x, e.y + 5 + bob); cx.lineTo(e.x - 3.5, e.y + bob); cx.fill(); cx.fillStyle = '#fff0c0'; cx.fillRect(e.x - 1, e.y - 2 + bob, 2, 2); }
     const ents = room.foes.map(f => ({ y: f.y, d: () => { drawFoe(f, t); } }));
+    for (const q of extraEnts()) ents.push(q);
     ents.push({ y: P.y, d: () => drawPilgrim(P.x, P.y, t, G.cls, P.inv > 0 && Math.floor(t * 20) % 2 ? .4 : 1) });
     ents.sort((a, b) => a.y - b.y).forEach(e => e.d());
     drawShots(room);
