@@ -79,6 +79,20 @@ for (const p of [A, B]) await p.click('#rw0');
 await waitF(A, () => __ashen.mode === 'wait'); await H.click('#rw0'); await waitF(H, () => __ashen.mode === 'map');
 await waitF(H, () => __coop.NET.ready.size === 2, 8000).then(() => ok(true, 'host map shows both guests ready'), () => ok(false, 'guests ready'));
 ok(await ev(A, () => __ashen.G.bag.filter(Boolean).length) >= 2, 'guest got its own reward page');
+// ---- a guest burns pages between rooms (waiting): real drag onto the brazier; host mirrors the wand + hp ----
+{ const drag = async (p, from) => { const c = await p.$(`[data-loc="${from}"] .chip`), z = await p.$('#burnzone'); const a = await c.boundingBox(), bz = await z.boundingBox(); const x0 = a.x + a.width / 2, y0 = a.y + a.height / 2, x1 = bz.x + bz.width / 2, y1 = bz.y + bz.height / 2; await p.mouse.move(x0, y0); await p.mouse.down(); for (let i = 1; i <= 10; i++) await p.mouse.move(x0 + (x1 - x0) * i / 10, y0 + (y1 - y0) * i / 10); await p.mouse.up(); };
+  await A.click('#edit'); await waitF(A, () => document.getElementById('burnzone'));
+  const pre = await ev(A, () => ({ bag: __ashen.G.bag.filter(Boolean).length, fl: __ashen.G.flame, em: __ashen.G.embersRun, w: __ashen.G.wands[0].slots.filter(Boolean).length }));
+  const bi = await ev(A, () => __ashen.G.bag.findIndex(x => x && !(CARDS[x].rar >= 4))); await drag(A, 'b:' + bi); await sleep(200);
+  await A.screenshot({ path: SH + tag + '-guest-burn-1280x800.png' });
+  const wi = await ev(A, () => __ashen.G.wands[0].slots.findIndex(x => x && !(CARDS[x].rar >= 4))); await drag(A, 'w:' + wi); await sleep(900);
+  const post = await ev(A, () => ({ bag: __ashen.G.bag.filter(Boolean).length, fl: __ashen.G.flame, em: __ashen.G.embersRun, w: __ashen.G.wands[0].slots.filter(Boolean).length, slots: __ashen.G.wands[0].slots.join(',') }));
+  const hq = await ev(H, () => { const q = [...__coop.NET.peers.values()].find(q => q.name === 'Bryn'); return { burns: (q.burns || []).length, hp: q.hp, slots: q.wand ? q.wand.slots.join(',') : '' }; });
+  ok(post.bag === pre.bag - 1 && post.w === pre.w - 1 && post.em > pre.em && hq.burns === 2 && hq.slots === post.slots && Math.abs(hq.hp - Math.ceil(post.fl)) <= 1, `guest burns 2 pages while waiting (satchel + grimoire): host logged ${hq.burns} burns, mirrors the wand [${hq.slots}] and hp ${hq.hp} (guest ${post.fl}, embers ${pre.em}→${post.em})`);
+  await A.click('#burnUndo'); await sleep(900);
+  const hu = await ev(H, () => { const q = [...__coop.NET.peers.values()].find(q => q.name === 'Bryn'); return { burns: (q.burns || []).length, n: q.wand.slots.filter(Boolean).length }; });
+  ok(hu.burns === 1 && hu.n === pre.w, 'guest undo of the last burn reaches the host (burn log ' + hu.burns + ', host wand back to ' + hu.n + ' pages)');
+  await A.click('#done'); await waitF(A, () => __ashen.mode === 'wait'); }
 // ---- Legendary pages in co-op: each mage brings an ornate grimoire with 2 Legendaries in its gold slots ----
 const LG = { H: ['cathedralfall', 'ossuary', 'spark', 'spark', 'spark', 'spark'], A: ['lastpage', 'hereticmark', 'spark', 'heavy', 'fireball', 'spark'], B: ['grimoireecho', 'eternalflame', 'ice', 'spark'] };
 for (const [p, k] of [[H, 'H'], [A, 'A'], [B, 'B']]) await ev(p, sl => { const w = lgOrnate(makeWand({ name: 'Four-Leaf Codex', slots: sl.concat([null, null]), delay: sl[0] === 'cathedralfall' ? .45 : .15, recharge: .3, maxMana: 600, mana: 600, regen: 200 })); __ashen.G.wands[0] = w; __ashen.G.active = 0; window.__lgS = 0; const _au = au; au = (...a) => { if (/^lg/.test(a[0])) window.__lgS++; return _au(...a); }; }, LG[k]);
@@ -107,6 +121,19 @@ const sn = { A: await ev(A, () => window.__lgS), B: await ev(B, () => window.__l
 // guest edits its grimoire after the burn: the Last Page must not come back on the host
 await ev(A, () => { __ashen.G.wands[0].slots[5] = 'spark'; }); await sleep(800);
 ok(!(await ev(H, () => [...__coop.NET.peers.values()].find(q => q.name === 'Bryn').wand.slots.includes('lastpage'))), 'burned Last Page stays gone after the guest changes its grimoire');
+// ---- a guest burns a page mid-room: host is authoritative for hp/embers and applies the refund ----
+{ await ev(H, () => { const q = [...__coop.NET.peers.values()].find(q => q.name === 'Cass'); q.hp = q.maxHp - 30; });
+  await sleep(500); const pre = await ev(B, () => ({ fl: __ashen.G.flame, em: __ashen.G.embersRun }));
+  const hp0 = await ev(H, () => { const q = [...__coop.NET.peers.values()].find(q => q.name === 'Cass'); return { hp: q.hp, em: q.em || 0 }; });
+  await ev(B, () => { edWand = 0; editor(() => { UI.innerHTML = ''; }); }); await waitF(B, () => document.getElementById('burnzone'));
+  const i = await ev(B, () => __ashen.G.wands[0].slots.indexOf('ice')); const rf = await ev(B, () => __burn.burnRefund('ice'));
+  { const c = await B.$(`[data-loc="w:${i}"] .chip`), z = await B.$('#burnzone'); const a = await c.boundingBox(), bz = await z.boundingBox(); await B.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await B.mouse.down(); for (let k = 1; k <= 10; k++) await B.mouse.move(a.x + a.width / 2 + (bz.x + bz.width / 2 - a.x - a.width / 2) * k / 10, a.y + a.height / 2 + (bz.y + bz.height / 2 - a.y - a.height / 2) * k / 10); await B.mouse.up(); }
+  await sleep(1000);
+  const hq = await ev(H, () => { const q = [...__coop.NET.peers.values()].find(q => q.name === 'Cass'); return { hp: q.hp, em: q.em || 0, burns: (q.burns || []).length, ice: q.wand.slots.includes('ice') }; });
+  const post = await ev(B, () => ({ fl: __ashen.G.flame, em: __ashen.G.embersRun, mode: __ashen.mode }));
+  await B.screenshot({ path: SH + tag + '-guest-burn-inroom-390x844.png' });
+  ok(hq.burns === 1 && !hq.ice && hq.hp === Math.min(hp0.hp + rf.fl, 999) && hq.em === hp0.em + rf.em && Math.abs(post.fl - hq.hp) <= 1 && post.mode === 'room', `guest burns Ice mid-room: host applies +${rf.fl} hp (${hp0.hp}→${hq.hp}) and +${rf.em} embers (${hp0.em}→${hq.em}), drops it from the guest's wand; guest shows hp ${post.fl}, embers ${pre.em}→${post.em}`);
+  await ev(B, () => { const d = document.getElementById('done'); d && d.click(); }); }
 // guest standing ritual: Starfall charged by a guest on the host
 await ev(B, () => { __ashen.G.wands[0].slots = ['starfall', 'spark', null, null, null, null]; }); await sleep(3800);
 ok(await ev(H, () => { const q = [...__coop.NET.peers.values()].find(q => q.name === 'Cass'); return __ashen.room && __ashen.room.shots.some(s => (s.kind === 'starfall' && s.owner === q) || (s.kind === 'meteor')); }), 'a guest\'s Starfall Rite charges and rains on the host');
