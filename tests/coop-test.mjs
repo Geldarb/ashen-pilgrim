@@ -134,6 +134,24 @@ ok(!(await ev(H, () => [...__coop.NET.peers.values()].find(q => q.name === 'Bryn
   await B.screenshot({ path: SH + tag + '-guest-burn-inroom-390x844.png' });
   ok(hq.burns === 1 && !hq.ice && hq.hp === Math.min(hp0.hp + rf.fl, 999) && hq.em === hp0.em + rf.em && Math.abs(post.fl - hq.hp) <= 1 && post.mode === 'room', `guest burns Ice mid-room: host applies +${rf.fl} hp (${hp0.hp}→${hq.hp}) and +${rf.em} embers (${hp0.em}→${hq.em}), drops it from the guest's wand; guest shows hp ${post.fl}, embers ${pre.em}→${post.em}`);
   await ev(B, () => { const d = document.getElementById('done'); d && d.click(); }); }
+// ---- Mythic pages in co-op: guests bring a grimoire with a ✶ mythic slot; the host simulates them, guests see them ----
+{ await ev(A, () => { const w = __ashen.G.wands[0]; w.slots = ['spark', 'spark', 'godfall']; w.myth = 1; w.idx = 0; w.mana = w.maxMana; });
+  await ev(B, () => { const w = __ashen.G.wands[0]; w.slots = ['spark', 'fireball', 'paradox']; w.myth = 1; w.idx = 0; });
+  const tough = setInterval(() => { H.evaluate(() => { if (__ashen.room) for (const f of __ashen.room.foes) if (!f.boss) f.hp = Math.max(f.hp, 400); }).catch(() => { }); }, 120);
+  let god = { h: 0, a: 0, b: 0 }, mv = { b: 0, a: 0 }, hm = 0;
+  for (let i = 0; i < 25; i++) {
+    const h = await ev(H, () => { const qa = [...__coop.NET.peers.values()].find(q => q.name === 'Bryn'), qb = [...__coop.NET.peers.values()].find(q => q.name === 'Cass'); return { god: (__ashen.room && (__ashen.room.allies || []).some(a => a.god && a.owner === qa)) ? 1 : 0, myth: (qa.wand && qa.wand.myth ? 1 : 0) + (qb.wand && qb.wand.myth ? 1 : 0), pdx: __ashen.room ? __ashen.room.shots.filter(s => s.mv && s.owner === qb).length : 0 }; });
+    god.h |= h.god; hm = Math.max(hm, h.myth); mv.h = Math.max(mv.h || 0, h.pdx);
+    const ga = await ev(A, () => __coop.room ? { g: (__coop.room.allies || []).some(a => a.god) ? 1 : 0, mv: __coop.room.shots.reduce((m, s) => m | (s.mv || 0), 0) } : { g: 0, mv: 0 }); god.a |= ga.g; mv.a |= ga.mv;
+    const gb = await ev(B, () => __coop.room ? { g: (__coop.room.allies || []).some(a => a.god) ? 1 : 0, mv: __coop.room.shots.reduce((m, s) => m | (s.mv || 0), 0) } : { g: 0, mv: 0 }); god.b |= gb.g; mv.b |= gb.mv;
+    if (god.a && god.b && mv.b && i === 12) { await A.screenshot({ path: SH + tag + '-mythic-guestA-1280x800.png' }); await B.screenshot({ path: SH + tag + '-mythic-guestB-390x844.png' }); }
+    await sleep(200);
+  }
+  const P_ = await ev(H, () => __mythic.MVB.paradox);
+  ok(hm === 2, 'host rebuilds both guests\' grimoires with their ✶ mythic slot');
+  ok(god.h && god.a && god.b, `a guest's Godfall summons a spectral boss ally on the host, seen by both guests (host ${god.h}, A ${god.a}, B ${god.b})`);
+  ok(mv.h > 0 && (mv.a & P_) && (mv.b & P_), `a guest's Paradox spells carry the Mythic overlay to every client (host live ${mv.h}, A bits ${mv.a}, B bits ${mv.b})`);
+  await ev(A, () => { const w = __ashen.G.wands[0]; w.slots = ['spark', 'heavy', 'fireball', 'spark', null, null]; w.myth = 0; }); await ev(B, () => { __ashen.G.wands[0].myth = 0; }); await sleep(500); await ev(H, () => { for (const a of (__ashen.room && __ashen.room.allies) || []) if (a.god) a.life = 0; }); clearInterval(tough); console.log('INFO host mode after mythic phase: ' + await ev(H, () => __ashen.mode + ' foes ' + (__ashen.room ? __ashen.room.foes.length : -1))); }
 // guest standing ritual: Starfall charged by a guest on the host
 await ev(B, () => { __ashen.G.wands[0].slots = ['starfall', 'spark', null, null, null, null]; }); await sleep(3800);
 ok(await ev(H, () => { const q = [...__coop.NET.peers.values()].find(q => q.name === 'Cass'); return __ashen.room && __ashen.room.shots.some(s => (s.kind === 'starfall' && s.owner === q) || (s.kind === 'meteor')); }), 'a guest\'s Starfall Rite charges and rains on the host');
