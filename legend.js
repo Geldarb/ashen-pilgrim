@@ -53,10 +53,13 @@ for (const id of LEGENDARY) CARDS[id].id = id;
 Object.assign(SHORT, { lastpage: 'Last Page', cathedralfall: 'Cathedral', abyssalmaw: 'Abyss Maw', saintshalo: 'Halo', eternalflame: 'Eternal', ossuary: 'Ossuary', starfall: 'Starfall', recursion: 'Recursion', fatebinding: 'Fatebind', timefracture: 'Time Fract.', ascension: 'Ascension', soulbound: 'Soulbound', hereticmark: 'Heretic', inversion: 'Inversion', grimoireecho: 'Echo', crownedash: 'Ash Crown' });
 // ---------- gold slots + ornate grimoires ----------
 const ORNATE_SVG = '<svg class="orn" viewBox="0 0 40 44" width="36" height="40" aria-hidden="true"><rect x="5" y="3" width="30" height="38" rx="2" fill="#5a0a14" stroke="#e8c060" stroke-width="2"/><rect x="5" y="3" width="5" height="38" fill="#3a0610"/><rect x="12" y="8" width="18" height="28" rx="1" fill="none" stroke="#c89a3a" stroke-width="1"/><path d="M21 12 l5 10 -5 10 -5 -10z" fill="#e8c060"/><circle cx="21" cy="22" r="3" fill="#b0102a" stroke="#ffe8a0" stroke-width=".8"/><path d="M5 3h6l-6 6zM35 3h-6l6 6zM5 41h6l-6-6zM35 41h-6l6-6z" fill="#e8c060"/><rect x="34" y="18" width="4" height="8" fill="#e8c060"/></svg>';
-function lgGoldN(w) { return w && w.ornate ? 2 : 1; }
+const LG_MAXGOLD = 4;
+function lgGoldN(w) { return w ? clamp(w.gold || (w.ornate ? 2 : 1), 1, LG_MAXGOLD) : 1; } // ordinary 1, ornate 2-4, Gilded Binding +1 (max 4)
+function lgGoldRoll(r = rng()) { return r < .7 ? 2 : r < .92 ? 3 : 4; } // ornate: 2 common, 3 uncommon, 4 rare
+function lgBind(w) { if (!w || lgGoldN(w) >= LG_MAXGOLD) return false; w.gold = lgGoldN(w) + 1; while (w.slots.length < w.gold + 1) w.slots.push(null); return true; }
 function lgGold(w, i) { return !!w && !!w.slots && i < Math.min(lgGoldN(w), w.slots.length); }
-function lgOrnate(w) {
-  w.ornate = true; if (!/Gilded/.test(w.name)) w.name = /^\w+-Leaf /.test(w.name) ? w.name.replace(/^(\w+-Leaf) /, '$1 Gilded ') : 'Gilded ' + w.name;
+function lgOrnate(w, gold) {
+  w.ornate = true; w.gold = gold || lgGoldRoll(); while (w.slots.length < w.gold + 2) w.slots.push(null); if (!/Gilded/.test(w.name)) w.name = /^\w+-Leaf /.test(w.name) ? w.name.replace(/^(\w+-Leaf) /, '$1 Gilded ') : 'Gilded ' + w.name;
   w.maxMana = Math.round(w.maxMana * 1.2); w.mana = w.maxMana; w.regen = Math.round(w.regen * 1.15); w.hue = 352; return w;
 }
 function lgRoll() { return pick(LEGENDARY); }
@@ -73,7 +76,7 @@ function lgCheckMove(from, to) {
 }
 function lgReject(loc, why) {
   const w = G.wands[edWand], n = lgGoldN(w);
-  const msg = why === 'limit' ? `This grimoire can hold only ${n} Legendary page${n > 1 ? 's' : ''}${w.ornate ? '' : ' — rare ornate grimoires hold 2'}.` : 'Legendary pages only fit in ♛ gold slots.';
+  const msg = why === 'limit' ? `This grimoire can hold only ${n} Legendary page${n > 1 ? 's' : ''}${n < LG_MAXGOLD ? ' — a Gilded Binding adds a gold slot (max ' + LG_MAXGOLD + ')' : ' — ' + LG_MAXGOLD + ' is the most any grimoire can hold'}.` : `Legendary pages only fit in ♛ gold slots (this grimoire has ${n}).`;
   au('lgDeny'); buzz(40); edSel = null; editor();
   const el = UI.querySelector(`[data-loc="${loc}"]`); if (el) { el.classList.add('shake', 'deny'); setTimeout(() => el.classList.remove('shake', 'deny'), 650); }
   UI.querySelectorAll('.slot.gold').forEach(g => { g.classList.add('pulse'); setTimeout(() => g.classList.remove('pulse'), 900); });
@@ -84,6 +87,17 @@ function lgReject(loc, why) {
 function lgFlash() { let d = document.getElementById('lgflash'); if (!d) { d = document.createElement('div'); d.id = 'lgflash'; document.body.appendChild(d); } d.classList.remove('on'); void d.offsetWidth; d.classList.add('on'); }
 function lgReveal(picked) { au(picked ? 'lgClaim' : 'lgFanfare'); lgFlash(); buzz(picked ? 60 : 30); window.__lgReveals = (window.__lgReveals || 0) + 1; }
 function lgRevealPanel() { if (UI.querySelector('.card.leg, .card.ornate')) lgReveal(); }
+// Gilded Binding: +1 gold slot on a grimoire of your choice (max 4)
+function lgBindRow(attrs, label) { return `<button class="card t-wand gild bindrow" ${attrs}><span class="ic">✦</span><div><b>${label}</b><span><em class="goldtxt">Adds one ♛ gold slot to a grimoire (max ${LG_MAXGOLD})</em> · gold slots are the only slots that hold Legendary pages.</span></div></button>`; }
+function lgBindPick(done, back) {
+  const ok = G.wands.map((w, i) => i).filter(i => lgGoldN(G.wands[i]) < LG_MAXGOLD);
+  if (!ok.length) { toast('Every grimoire already has ' + LG_MAXGOLD + ' gold slots'); return; }
+  const apply = i => { const w = G.wands[i]; lgBind(w); toast('✦ ' + w.name + ' now has ' + lgGoldN(w) + ' gold slots'); au('lgClaim'); lgFlash(); saveRun(); done(w); };
+  if (ok.length === 1 && G.wands.length === 1) return apply(ok[0]);
+  mode = 'pick';
+  panel(`<h2>✦ Gilded Binding</h2><p>Which grimoire receives the gold thread?</p><div class="cards">${G.wands.map((w, i) => wandRow(w, `id="bw${i}" ${ok.includes(i) ? '' : 'disabled'}`, w.name + ' — ' + lgGoldN(w) + ' → ' + Math.min(LG_MAXGOLD, lgGoldN(w) + 1) + ' gold slots')).join('')}</div><button class="btn sub" id="bcancel">Cancel</button>`);
+  ok.forEach(i => on('bw' + i, () => apply(i))); on('bcancel', back);
+}
 // rare altar (12% of altars): a single Legendary page for 15 max HP
 function lgAltar() {
   if (!(rng() < .12 || DEBUG === 'altar')) return false;
@@ -97,13 +111,13 @@ function lgAltar() {
   };
   show(); lgReveal(); return true;
 }
-// ?debug=legendary: every Legendary page + an ornate 2-gold-slot grimoire
+// ?debug=legendary: every Legendary page + an ornate 4-gold-slot grimoire (4 Legendaries stacked)
 function lgDebugKit(coop) {
-  const w = lgOrnate(makeWand({ name: 'Five-Leaf Reliquary Codex', leaves: 5, slots: ['timefracture', 'requiem', 'spark', 'fireball', 'double', 'ice', null, null], delay: .18, recharge: .4, maxMana: 420, mana: 420, regen: 120, hue: 352 }));
+  const w = lgOrnate(makeWand({ name: 'Five-Leaf Reliquary Codex', leaves: 5, slots: ['timefracture', 'requiem', 'fatebinding', 'eternalflame', 'spark', 'fireball', 'double', 'ice', null, null], delay: .18, recharge: .4, maxMana: 420, mana: 420, regen: 120, hue: 352 }), 4);
   w.name = 'Five-Leaf Gilded Reliquary Codex';
   const w2 = makeWand({ name: 'Three-Leaf Ember Tome', leaves: 3, slots: ['saintshalo', 'spark', 'homing', 'spark', null, null], delay: .2, recharge: .4, maxMana: 300, mana: 300, regen: 90, hue: 30 });
   G.wands = [w, w2]; G.active = 0;
-  G.bag = LEGENDARY.filter(id => !['timefracture', 'requiem', 'saintshalo'].includes(id)).concat(['heavy', 'homing', 'double', 'fireball', null, null, null, null]);
+  G.bag = LEGENDARY.filter(id => !['timefracture', 'requiem', 'fatebinding', 'eternalflame', 'saintshalo'].includes(id)).concat(['heavy', 'homing', 'double', 'fireball', null, null, null, null]);
   G.maxFlame = Math.max(G.maxFlame, 160); G.flame = G.maxFlame;
   if (!coop) { showMap(); toast('DEBUG: all 18 Legendaries', 2200); }
 }
@@ -599,4 +613,4 @@ if (window.AUD && AUD.reg) AUD.reg(({ tone, noise, bell, panOf }) => {
     lgRecur: (p, n) => { p = panOf(p); tone('sine', 880 / Math.pow(1.4, +n || 1), 0, .1, .05, { pan: p }); },
   };
 }, { lgToll: .3, lgBeam: .12, lgGulp: .1, lgFate: .1, lgAscend: .08, lgAsh: .12, lgRecur: .06, lgTick: .2, lgHealInv: .2, lgHeretic: .15, lgGlyph: .12, lgFizzle: .2, lgCrash: .3, lgDeny: .2 });
-window.__legend = { LEGENDARY, LEG_PROJ, LEG_GLYPH, LVB, LCAP, lgGold, lgGoldN, lgOrnate, lgCheckMove, lgReject, lgReveal, lgAltar, lgDebugKit, lgRoll };
+window.__legend = { lgBindPick, lgBindRow, LG_MAXGOLD, lgGoldRoll, lgBind, LEGENDARY, LEG_PROJ, LEG_GLYPH, LVB, LCAP, lgGold, lgGoldN, lgOrnate, lgCheckMove, lgReject, lgReveal, lgAltar, lgDebugKit, lgRoll };

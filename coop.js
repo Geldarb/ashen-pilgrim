@@ -96,6 +96,12 @@ function hostMsg(from, d) {
     if (!wasIn) { q.inRoom = true; q.hp = d.hp; q.maxHp = d.maxHp; q.em = 0; q.down = false; q.inv = 1; }
     if (!q.down) { q.x = dx_(d.x); q.y = dy_(d.y); q.face = d.face; q.walk = d.walk; if (d.dodge && !q.dodge) dodgeSigils(q, q.wand, room); q.dodge = d.dodge; }
   }
+  if ((d.k === 'burn' || d.k === 'unburn') && window.__burn) { // a guest burned (or un-burned) a page: the host computes the refund itself; in a room it is authoritative for hp/embers
+    const B = q.burns || (q.burns = []); const live = room && q.inRoom;
+    if (d.k === 'burn' && CARDS[d.id]) { const rf = __burn.burnRefund(d.id), fl = live ? Math.max(0, Math.min(rf.fl, q.maxHp - q.hp)) : 0, em = live ? rf.em : 0; B.push({ id: d.id, fl, em }); NET.burnLog = (NET.burnLog || 0) + 1;
+      if (live) { q.hp += fl; q.em = (q.em || 0) + em; room.fxs.push({ type: 'ring', x: q.x, y: q.y - 20, r: 6, R: 46, life: .6, c: '#ffb050' }); room.fxs.push({ type: 'circle', x: q.x, y: q.y - 20, r: 22, life: .5, c: '#ff7a2a' }); } }
+    else if (d.k === 'unburn' && B.length) { const r = B.pop(); if (live) { q.hp = Math.max(1, q.hp - r.fl); q.em = Math.max(0, (q.em || 0) - r.em); } }
+  }
   if (d.k === 'skill' && room && q.inRoom && !q.down && q.skillCd <= 0) {
     q.skillCd = q.cls === 'witch' ? 9 : 7;
     if (q.cls === 'witch') { for (let i = 0; i < 3; i++) room.wisps.push({ a: i * TAU / 3, life: 6, o: q }); }
@@ -215,7 +221,7 @@ function clientUpdate(dt) {
 function sendState(inRoom) {
   const w = wand();
   toHost({ k: 'st', inRoom, x: nx(P.x), y: ny(P.y), face: +P.face.toFixed(2), walk: +P.walk.toFixed(2), dodge: P.dodgeT > 0 ? 1 : 0, hp: Math.ceil(G.flame), maxHp: G.maxFlame, cls: G.cls, name: myName(), ready: mode === 'wait',
-    w: { name: w.name, slots: w.slots, delay: w.delay, recharge: w.recharge, maxMana: w.maxMana, regen: w.regen, hue: w.hue, leaves: w.leaves, ornate: !!w.ornate }, lb: NET.lpAck || 0 });
+    w: { name: w.name, slots: w.slots, delay: w.delay, recharge: w.recharge, maxMana: w.maxMana, regen: w.regen, hue: w.hue, leaves: w.leaves, ornate: !!w.ornate, gold: w.gold || 0 }, lb: NET.lpAck || 0 });
 }
 setInterval(() => { if (NET.on && !NET.host && G && G.coop && mode !== 'room') sendState(false); }, 500);
 function applySnap(s) {

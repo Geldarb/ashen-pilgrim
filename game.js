@@ -325,7 +325,7 @@ const TYPE_NAME = { proj: 'Attack Page', mod: 'Glyph Page', multi: 'Chant Page',
 function makeWand(o) { return Object.assign({ name: 'Wand', slots: [], delay: .25, recharge: .5, maxMana: 100, mana: 100, regen: 30, idx: 0, cd: 0, hue: 30 }, o); }
 const WAND_NAMES = ['Gale Codex', 'Ember Tome', 'Tidebound Grimoire', 'Storm Ledger', 'Umbral Folio', 'Dawn Psalter', 'Stoneleaf Book', 'Starlit Almanac'];
 function randomWand(tier, ornate) {
-  const n = clamp(Math.round(2 + rnd(2, 4) + tier * 0.5) + (ornate ? 1 : 0), ornate ? 4 : 2, 8);
+  const n = clamp(Math.round(2 + rnd(2, 4) + tier * 0.5) + (ornate ? 1 : 0), ornate ? 4 : 2, ornate ? 9 : 8);
   const w = makeWand({ name: pick(WAND_NAMES), slots: Array(n).fill(null), delay: +rnd(.08, .35).toFixed(2), recharge: +rnd(.2, .9).toFixed(2), maxMana: Math.round(rnd(80, 220)), regen: Math.round(rnd(25, 70)), hue: Math.round(rnd(360)) });
   w.mana = w.maxMana; w.leaves = clamp(Math.ceil(n / 2) + (rng() < .2 ? 1 : 0), 1, 5); w.name = ['One', 'Two', 'Three', 'Four', 'Five'][w.leaves - 1] + '-Leaf ' + w.name;
   w.slots[0] = pick(['spark', 'burst', 'ice', 'spark', 'missile', 'bubble']); if (rng() < .5) w.slots[1] = pick(['double', 'speed', 'homing', 'spark', 'wave']);
@@ -592,7 +592,7 @@ function on(id, f) { const e = document.getElementById(id); if (e) e.onclick = f
 const SHORT = { critburn: 'Crit on Burn', smallfast: 'Small+Fast', trigger: 'Trigger Bolt', behind: 'Behind+Fwd', blackhole: 'Black Hole', sickle: 'Sickle', bolt: 'Lightning', missile: 'Missile', chain: 'Chain Ltng', burst: 'Bounce Burst', skull: 'Grave Skull', explode: 'Explode', freeze: 'Freeze', wisp: 'Wisp', deathtrig: 'Death Trig', expiry: 'Expiry Trig', lifesteal: 'Lifesteal', knock: 'Knockback' };
 const cardChip = (id, extra = '') => id ? `<div class="chip t-${CARDS[id].t}${CARDS[id].leg ? ' leg' : ''}" data-card="${id}" title="${CARDS[id].name}" ${extra}><i>${CARDS[id].icon}</i><u>${SHORT[id] || CARDS[id].name}</u></div>` : '';
 function cardRow(id, attrs = '', label) { const c = CARDS[id]; return `<button class="card t-${c.t}${c.leg ? ' leg' : ''}" ${attrs}><span class="ic">${c.icon}</span><div><b>${label || c.name}</b><span><em>${c.leg ? 'Legendary ' : ''}${TYPE_NAME[c.t]}</em>${(c.rar || 1) > 1 && !c.leg ? ' · ' + RAR_NAME[c.rar] : ''} · ${c.mana ? c.mana + ' mana · ' : ''}${c.desc}${c.flav ? '<i class="flav">“' + c.flav + '”</i>' : ''}</span></div></button>`; }
-function wandRow(w, attrs = '', label) { return `<button class="card t-wand${w.ornate ? ' ornate' : ''}" ${attrs}><span class="ic">${w.ornate ? ORNATE_SVG : '📖'}</span><div><b>${label || w.name}</b><span>${w.ornate ? '<em class="goldtxt">Rare ornate grimoire · 2 gold slots for Legendary pages</em> · ' : ''}${w.slots.length} slots · delay ${w.delay}s · recharge ${w.recharge}s · mana ${w.maxMana} (+${w.regen}/s)${w.slots.some(Boolean) ? ' · holds ' + w.slots.filter(Boolean).map(i => CARDS[i].name).join(', ') : ''}</span></div></button>`; }
+function wandRow(w, attrs = '', label) { return `<button class="card t-wand${w.ornate ? ' ornate' : ''}" ${attrs}><span class="ic">${w.ornate ? ORNATE_SVG : '📖'}</span><div><b>${label || w.name}</b><span>${w.ornate || lgGoldN(w) > 1 ? '<em class="goldtxt">' + (w.ornate ? 'Rare ornate grimoire · ' : 'Gilded binding · ') + lgGoldN(w) + ' gold slots for Legendary pages</em> · ' : ''}${w.slots.length} slots · delay ${w.delay}s · recharge ${w.recharge}s · mana ${w.maxMana} (+${w.regen}/s)${w.slots.some(Boolean) ? ' · holds ' + w.slots.filter(Boolean).map(i => CARDS[i].name).join(', ') : ''}</span></div></button>`; }
 
 function showCamp() {
   mode = 'camp'; HUD.classList.add('hidden'); G = null; bg = null;
@@ -686,12 +686,13 @@ function takeWand(w, then) {
 }
 function shrine() {
   if (lgAltar()) return;
-  mode = 'pick'; const heal = Math.round(G.maxFlame * 0.35);
+  mode = 'pick'; const heal = Math.round(G.maxFlame * 0.35), bind = rng() < .3; // some altars offer a Gilded Binding (+1 gold slot)
   panel(`<h2>⛩ Ancient Altar</h2><p>A glowing sigil-stone hums with old magic. You can rebind your grimoire here.</p>
-  <button class="btn sub" id="edit">📖 Edit grimoire</button>
+  <button class="btn sub" id="edit">📖 Edit grimoire</button>${bind ? '<button class="btn gild" id="bind">✦ Gilded Binding — +1 ♛ gold slot (max 4), lose 8 max HP</button>' : ''}
   <button class="btn hot" id="rest">Meditate — restore ${heal} HP</button>
   <button class="btn" id="pray">Pray — a random page, lose 10 max HP</button>`);
   on('edit', () => editor(shrine));
+  on('bind', () => lgBindPick(w => { G.maxFlame -= 8; G.flame = Math.min(G.flame, G.maxFlame); advance(); }, shrine));
   on('rest', () => { G.flame = Math.min(G.maxFlame, G.flame + heal); advance(); });
   on('pray', () => { const id = pick(CARD_POOL); bagAdd(id); toast(CARDS[id].icon + ' ' + CARDS[id].name); G.maxFlame -= 10; G.flame = Math.min(G.flame, G.maxFlame); advance(); });
 }
@@ -699,11 +700,13 @@ function merchant() {
   mode = 'pick';
   const ch = cardChoices(4, true), prices = ch.map(id => Math.round((CARDS[id].t === 'proj' ? 16 : 12) + rnd(0, 10)));
   const orn = rng() < .05; let wnd = randomWand(G.step + 1, orn); const wp = orn ? 60 : 35; // very rarely an ornate grimoire
+  let bindP = rng() < .3 ? 30 : 0; // sometimes a Gilded Binding (+1 gold slot)
   const draw = () => {
     panel(`<h2>⚖ Wandering Peddler</h2><p>"Pages for a bit of your life force, young mage! Fair trade, heh."</p><p class="stat">HP ${Math.ceil(G.flame)}/${G.maxFlame} · Satchel ${G.bag.filter(Boolean).length}/8</p><div class="cards">${ch.map((id, i) => id ? cardRow(id, `id="buy${i}" ${G.flame <= prices[i] || !G.bag.includes(null) ? 'disabled' : ''}`, CARDS[id].name + ' — ' + prices[i] + ' HP') : '').join('')}
-    ${wnd ? wandRow(wnd, `id="buyW" ${G.flame <= wp ? 'disabled' : ''}`, wnd.name + ' — ' + wp + ' HP') : ''}</div><button class="btn sub" id="edit">📖 Edit grimoire</button><button class="btn" id="leave">Leave</button>`);
+    ${wnd ? wandRow(wnd, `id="buyW" ${G.flame <= wp ? 'disabled' : ''}`, wnd.name + ' — ' + wp + ' HP') : ''}${bindP ? lgBindRow(`id="buyB" ${G.flame <= bindP || !G.wands.some(x => lgGoldN(x) < LG_MAXGOLD) ? 'disabled' : ''}`, 'Gilded Binding — ' + bindP + ' HP') : ''}</div><button class="btn sub" id="edit">📖 Edit grimoire</button><button class="btn" id="leave">Leave</button>`);
     ch.forEach((id, i) => id && on('buy' + i, () => { G.flame -= prices[i]; bagAdd(id); ch[i] = null; draw(); }));
     on('buyW', () => { G.flame -= wp; const w = wnd; wnd = null; takeWand(w, draw); });
+    on('buyB', () => lgBindPick(w => { G.flame -= bindP; bindP = 0; draw(); }, draw));
     on('edit', () => editor(draw));
     on('leave', advance);
   };
@@ -742,7 +745,7 @@ function editor(back) {
   ${G.wands.length > 1 ? `<div class="tabs">${G.wands.map((x, i) => `<button class="tab ${i === edWand ? 'on' : ''}" id="wt${i}">${x.name}</button>`).join('')}</div>` : `<p class="small">${w.name}</p>`}
   <p class="small">delay ${w.delay}s · recharge ${w.recharge}s · mana ${mmax(w)} (+${Math.round(mreg(w))}/s) · ${w.slots.length} slots</p>
   <div class="slots wand${w.ornate ? ' ornate' : ''}" id="wslots">${w.slots.map((id, i) => `<div class="slot${lgGold(w, i) ? ' gold' : ''}" data-loc="w:${i}">${cardChip(id)}</div>`).join('')}</div>
-  <p class="small goldnote">♛ Gold slot${lgGoldN(w) > 1 ? 's hold' : ' holds'} Legendary pages — this ${w.ornate ? 'ornate grimoire holds 2' : 'grimoire holds 1'}${w.ornate ? '' : ' (rare ornate grimoires hold 2)'}.</p>
+  <p class="small goldnote">♛ ${lgGoldN(w)} gold slot${lgGoldN(w) > 1 ? 's' : ''} — this grimoire holds ${lgGoldN(w)} Legendary page${lgGoldN(w) > 1 ? 's' : ''}${lgGoldN(w) < LG_MAXGOLD ? ' (a Gilded Binding adds one, max ' + LG_MAXGOLD + ')' : ' (the maximum)'}.</p>
   <canvas id="pv" width="300" height="120"></canvas>
   <p class="cast" id="castDesc">${describeCast(w)}</p>
   <p class="small">Satchel</p>
@@ -777,8 +780,8 @@ addEventListener('pointermove', e => {
 addEventListener('pointerup', e => {
   if (!drag || e.pointerId !== drag.id) return;
   const d = drag; drag = null;
-  if (window.LP_ACTIVE) { window.LP_ACTIVE = false; if (d.ghost) { d.ghost.remove(); editor(); } return; } // press-and-hold showed the page info
-  if (d.ghost) { d.ghost.remove(); const el = document.elementFromPoint(e.clientX, e.clientY); const sl = el && el.closest('.slot'); if (sl) moveCard(d.loc, sl.dataset.loc); else editor(); return; }
+  if (window.LP_ACTIVE) { window.LP_ACTIVE = false; if (!d.ghost) return; if (!(window.__burn && __burn.isOpen())) { d.ghost.remove(); editor(); return; } __burn.closeBurnSheet(); } // press-and-hold showed the page info / burn sheet (dragging on drops normally)
+  if (d.ghost) { d.ghost.remove(); const el = document.elementFromPoint(e.clientX, e.clientY); if (el && el.closest('#burnzone') && window.__burn) { __burn.BURN.dragged = (__burn.BURN.dragged || 0) + 1; return __burn.burnAsk(d.loc); } const sl = el && el.closest('.slot'); if (sl) moveCard(d.loc, sl.dataset.loc); else editor(); return; }
   if (edSel && edSel !== d.loc) { const f = edSel; edSel = null; moveCard(f, d.loc); }
   else if (edSel === d.loc) { edSel = null; editor(); }
   else if (d.chip) { edSel = d.loc; UI.querySelectorAll('.slot.sel').forEach(x => x.classList.remove('sel')); const s = UI.querySelector(`[data-loc="${d.loc}"]`); s && s.classList.add('sel'); }

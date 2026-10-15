@@ -35,7 +35,7 @@ function hideTip() { TIP.classList.add('hidden'); }
 document.addEventListener('pointerdown', e => {
   hideTip(); const chip = e.target.closest && e.target.closest('.chip:not(.ghost)'); if (!chip) return;
   const x = e.clientX, y = e.clientY; clearTimeout(_lp && _lp.t);
-  _lp = { x, y, id: e.pointerId, t: setTimeout(() => { LP_ACTIVE = true; showTip(chip, x, y); }, 430) };
+  _lp = { x, y, id: e.pointerId, t: setTimeout(() => { LP_ACTIVE = true; const sl = chip.closest('.slot[data-loc]'); if (sl && window.__burn && document.getElementById('burnzone')) __burn.burnSheet(sl.dataset.loc, false); else showTip(chip, x, y); }, 430) };
 }, true);
 document.addEventListener('pointermove', e => { if (_lp && e.pointerId === _lp.id && Math.hypot(e.clientX - _lp.x, e.clientY - _lp.y) > 8) { clearTimeout(_lp.t); _lp = null; } }, true);
 for (const ev of ['pointerup', 'pointercancel']) document.addEventListener(ev, () => { if (_lp) clearTimeout(_lp.t); _lp = null; if (LP_ACTIVE) setTimeout(hideTip, 900); }, true);

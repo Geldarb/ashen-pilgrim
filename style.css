@@ -136,3 +136,41 @@ b.deny{color:#ff6a6a}
 @keyframes lgflash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
 #lgflash.on{animation:lgflash .9s ease-out}
 @media (prefers-reduced-motion:reduce){.chip.leg,.card.leg{animation:none}#lgflash.on{animation-duration:.3s}}
+/* ---- burning pages (burn.js) ---- */
+.btn.gild{border-color:#e0b040;background:linear-gradient(#4a3510,#2a1d08);color:#ffe7a0;box-shadow:0 0 12px rgba(255,200,80,.25)}
+.burnrow{display:flex;gap:8px;align-items:stretch;margin:8px 0 2px}
+.burnzone{flex:1;display:flex;align-items:center;gap:10px;min-height:56px;padding:4px 12px;border-radius:12px;border:1px dashed #b0602a;background:radial-gradient(ellipse at 30px 70%,rgba(255,120,30,.22),transparent 70%),#1a0f08;color:#ffc58a;cursor:pointer;touch-action:none;transition:border-color .15s,box-shadow .15s,transform .15s;user-select:none;-webkit-user-select:none}
+.burnzone span{display:flex;flex-direction:column;line-height:1.15}.burnzone b{font-size:16px;letter-spacing:.04em}.burnzone i{font-style:normal;font-size:12px;color:#b98b62}
+.burnzone .brazier{width:46px;height:46px;flex:none;overflow:visible}
+.brazier .bowl{fill:#4a2c18;stroke:#a0602a;stroke-width:1.5}.brazier .rim{fill:#7a4a22}.brazier .leg{fill:#3a2212}
+.brazier .flames{transform-origin:32px 40px;animation:brflick .5s ease-in-out infinite alternate}
+.brazier .fl1{fill:#ff7a1a;opacity:.9}.brazier .fl2{fill:#ffd36a;animation:brflick .37s ease-in-out infinite alternate-reverse;transform-origin:32px 38px}
+@keyframes brflick{0%{transform:scale(1,.9) skewX(-3deg)}100%{transform:scale(.95,1.08) skewX(3deg)}}
+.burnzone.hot{border-style:solid;border-color:#ffb040;box-shadow:0 0 22px rgba(255,140,40,.55),inset 0 0 18px rgba(255,120,30,.35);transform:scale(1.03)}
+.burnzone.hot .flames{animation-duration:.18s}.burnzone.hot .brazier .flames{transform:scale(1.25)}
+.burnzone.flare .brazier{animation:brflare .7s ease-out}
+@keyframes brflare{0%{filter:brightness(2.2) drop-shadow(0 0 10px #ff8a20)}100%{filter:none}}
+.burnrow .undo{width:auto;flex:none;margin:0;padding:6px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;max-width:44%}
+.burnrow .undo span{font-size:11px;color:#b9a582;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.chip.burning{animation:burnaway .9s ease-in forwards;overflow:hidden}
+@keyframes burnaway{0%{clip-path:inset(0 0 0 0);filter:none}25%{filter:sepia(1) saturate(4) brightness(1.4)}100%{clip-path:inset(100% 0 0 0);filter:sepia(1) saturate(5) brightness(.6);transform:translateY(-6px)}}
+.burnline{position:absolute;left:-4px;right:-4px;height:6px;top:0;background:linear-gradient(90deg,transparent,#ffd36a,#ff7a1a,#ffd36a,transparent);box-shadow:0 0 10px #ff8a20;animation:burnline .9s ease-in forwards}
+@keyframes burnline{0%{top:-3px}100%{top:100%}}
+.ember{position:fixed;width:4px;height:4px;border-radius:50%;background:#ffb040;box-shadow:0 0 6px #ff7a1a;z-index:141;pointer-events:none;opacity:0;animation:emberfly 1s ease-out forwards}
+.ember.gold{background:#ffe7a0;box-shadow:0 0 8px #ffc040}
+@keyframes emberfly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.3)}}
+.slot.restored{animation:restored .8s ease-out}
+@keyframes restored{0%{box-shadow:0 0 0 3px #ffd36a,0 0 18px #ffb040}100%{box-shadow:none}}
+#burnsheet{position:fixed;z-index:130;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(360px,calc(100vw - 24px));padding:12px 14px;border-radius:14px;border:1px solid #c8702a;background:linear-gradient(#2a1a0ef8,#140c06f8);box-shadow:0 10px 34px #000d,inset 0 0 0 1px rgba(255,170,90,.14);color:#e8d9bd;animation:sheetup .18s ease-out}
+#burnsheet.hidden{display:none}
+#burnsheet.confirm{top:50%;bottom:auto;transform:translate(-50%,-50%);box-shadow:0 0 0 100vmax rgba(0,0,0,.6),0 10px 34px #000d;animation:none}
+#burnsheet.leg{border-color:#f0c050}
+@keyframes sheetup{0%{transform:translate(-50%,20px);opacity:0}100%{transform:translateX(-50%);opacity:1}}
+#burnsheet .tiphead{display:flex;gap:10px;align-items:center;font-size:17px;color:#ffcf85}#burnsheet .tiphead i{font-style:normal;font-size:26px;color:var(--c)}
+#burnsheet .tipmeta{font-size:12px;margin:4px 0 6px;color:#b9a582}#burnsheet .tipmeta em{font-style:normal;color:var(--c)}#burnsheet p{font-size:14px;line-height:1.35}
+#burnsheet .bshead{font-size:18px;color:#ffb060;margin-bottom:8px}
+#burnsheet .bswarn{color:#e8c9a0;margin:8px 0 4px}
+.bsrow{display:flex;gap:8px;margin-top:10px}.bsrow .btn{margin:0}.bsrow .btn.sub{flex:0 0 36%}
+.btn.burnbtn{border-color:#ff8a30;background:linear-gradient(#8a3a10,#4a1c06);color:#fff0d0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px}
+.btn.burnbtn span{font-size:12px;color:#ffd0a0}
+@media (prefers-reduced-motion:reduce){.brazier .flames,.brazier .fl2{animation:none}}

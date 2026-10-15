@@ -32,7 +32,17 @@ const out = await pg.evaluate(() => {
     ok('gold', L.lgGoldN(plain) === 1 && L.lgGoldN(orn) === 2 && L.lgGold(plain, 0) && !L.lgGold(plain, 1) && L.lgGold(orn, 1) && !L.lgGold(orn, 2), 'ordinary grimoire: 1 gold slot; ornate: 2 (the first slots)');
     const k = w => { const out = []; for (let i = 0; i < 3; i++) { const c = buildCast(w); out.push(...c.shots.map(s => s.p)); w.idx = c.nextIdx; } return out; };
     ok('gold', !k(plain).includes('requiem') && k(first).includes('requiem') && k(orn).includes('requiem') && !k(orn3).includes('requiem'), 'a Legendary outside a gold slot is inert (engine safety net)'); }
-  { const w = randomWand(3, true); ok('gold', w.ornate && w.slots.length >= 4 && /Gilded/.test(w.name) && L.lgGoldN(w) === 2 && w.hue === 352, 'ornate grimoires: gilded, ≥4 slots, 2 gold slots (' + w.name + ')'); }
+  { const w = randomWand(3, true); ok('gold', w.ornate && w.slots.length >= 4 && /Gilded/.test(w.name) && L.lgGoldN(w) >= 2 && L.lgGoldN(w) <= 4 && w.slots.length >= L.lgGoldN(w) + 2 && w.hue === 352, 'ornate grimoires: gilded, ≥4 slots, 2–4 gold slots (' + w.name + ', ' + L.lgGoldN(w) + ' gold)'); }
+  { const cnt = { 2: 0, 3: 0, 4: 0 }; let bad = 0; for (let i = 0; i < 3000; i++) { const w = randomWand(1 + i % 6, true), g = L.lgGoldN(w); if (cnt[g] == null || w.slots.length < g + 2) bad++; else cnt[g]++; }
+    ok('gold', !bad && cnt[2] > cnt[3] && cnt[3] > cnt[4] && cnt[4] > 0 && cnt[2] / 3000 > .6 && cnt[4] / 3000 < .13, 'ornate gold-slot roll over 3000 grimoires: 2→' + cnt[2] + ', 3→' + cnt[3] + ', 4→' + cnt[4] + ' (2 common, 4 rare; slots ≥ gold+2)');
+    let plainBad = 0; for (let i = 0; i < 500; i++) if (L.lgGoldN(randomWand(1 + i % 6, false)) !== 1) plainBad++; ok('gold', !plainBad, 'ordinary grimoires always have exactly 1 gold slot (500 rolled)'); }
+  { const w = W(['spark', 'spark'], { ornate: false }), seq = [L.lgGoldN(w)]; let r; while ((r = L.lgBind(w))) seq.push(L.lgGoldN(w)); const o = W(['spark', 'spark', 'spark', 'spark'], { gold: 4 });
+    ok('binding', seq.join() === '1,2,3,4' && w.slots.length >= 4 && L.lgBind(w) === false && L.lgBind(o) === false && L.LG_MAXGOLD === 4 && L.lgGoldN(W(['spark'], { gold: 9 })) === 4, 'Gilded Binding: 1→2→3→4 gold slots then refuses (pads slots to ' + w.slots.length + '); never above 4'); }
+  { const w4 = W(['requiem', 'starfall', 'cathedralfall', 'abyssalmaw', 'spark', 'saintshalo'], { gold: 4 }), k = w => { const out = []; for (let i = 0; i < 6; i++) { const c = buildCast(w); out.push(...c.shots.map(s => s.p)); w.idx = c.nextIdx; } return out; };
+    const ids = JSON.stringify(k(w4)); ok('gold', ['requiem', 'starfall', 'cathedralfall', 'abyssalmaw'].every(x => ids.includes(x)) && !ids.includes('saintshalo'), '4 gold slots: all 4 Legendaries cast; a 5th outside gold is inert');
+    __ashen.G.wands = [W(['requiem', 'starfall', 'cathedralfall', null, null, null], { gold: 4 })]; edWand = 0; const bag0 = __ashen.G.bag; __ashen.G.bag = ['abyssalmaw', 'ossuary', null];
+    const a = L.lgCheckMove('b:0', 'w:3'); __ashen.G.wands[0].slots[3] = 'abyssalmaw'; const b = L.lgCheckMove('b:1', 'w:4'), c2 = L.lgCheckMove('b:1', 'w:2');
+    ok('gold', a === null && b === 'limit' && c2 === null, '4th Legendary into gold slot 4 allowed; a 5th refused (limit); swapping into an occupied gold slot allowed'); __ashen.G.bag = bag0; }
   // ---- attacks ----
   { const wd = world([foe(150, 214), foe(400, 300), foe(520, 120)]), w = W(['requiem']); const c1 = cast(wd, w); let blocked = 0; step(wd, 1.2); w.cd = 0; if (!cast(wd, w)) blocked = 1; step(wd, 2.4);
     const hits = wd.foes.map(f => Math.round(tk(wd, f)));
@@ -133,6 +143,13 @@ const out2 = await pg.evaluate(() => {
       const wd2 = world([foe(300, 200)]); for (let i = 0; i < 30; i++) lgDeath(wd2, { x: 100 + i * 5, y: 200 }); for (let i = 0; i < 5; i++) { cast(wd2, W(['ossuary'])); }
       perf.push(q + ': max ' + maxS + ' live spells, ash depth ' + maxD + ', recursion ' + maxR + ', ' + (wd2.allies || []).length + ' skeletons, ' + ms.toFixed(2) + ' ms/sim-frame');
       ok('perf', maxS <= 220 && maxD <= L.LCAP.ash() && maxR <= L.LCAP.recur() && (wd2.allies || []).length <= L.LCAP.allies(), 'caps hold under stress [' + perf[perf.length - 1] + ']');
+      // 4 Legendaries stacked in one 4-gold grimoire (glyph-heavy and attack-heavy), 40 foes, 10 s of sim
+      for (const [tag, st] of [['4 glyphs', ['recursion', 'crownedash', 'grimoireecho', 'timefracture', 'double', 'spark', 'spark']], ['4 attacks', ['starfall', 'cathedralfall', 'requiem', 'ossuary', 'spark']]]) {
+        const w4 = W(st, { gold: 4, delay: .05, recharge: .1 }), wd4 = world(fs()); let mS = 0, mD = 0, mR = 0, mF = 0, mA = 0; const t1 = performance.now(); let fr = 0;
+        for (let k = 0; k < 600; k++) { if (w4.cd <= 0) cast(wd4, w4, (k * .37) % 6.28); w4.cd -= 1 / 60; step(wd4, 1 / 60); fr++; mS = Math.max(mS, wd4.shots.length); mF = Math.max(mF, wd4.fxs.length); mA = Math.max(mA, (wd4.allies || []).length); for (const s of wd4.shots) { mD = Math.max(mD, s.ash || 0); mR = Math.max(mR, s.recur || 0); } if (wd4.foes.length < 10) wd4.foes.push(...fs()); }
+        const ms4 = (performance.now() - t1) / fr; perf.push(q + ' ' + tag + ': max ' + mS + ' spells, ' + mF + ' fx, ' + mA + ' allies, ash ' + mD + ', recursion ' + mR + ', ' + ms4.toFixed(2) + ' ms/sim-frame');
+        ok('perf', mS <= 220 && mD <= L.LCAP.ash() && mR <= L.LCAP.recur() && mA <= L.LCAP.allies() && ms4 < 8, '4 stacked Legendaries — caps hold [' + perf[perf.length - 1] + ']');
+      }
     } finally { QUAL.parts = q0; }
   }
   return { res, perf };
@@ -157,7 +174,7 @@ const box = async sel => { const e = await pg.$(sel); const bb = await e.boundin
 await pg.screenshot({ path: '/workspace/ashen-shots/lg-editor-deny-390.png' });
 r = await pg.evaluate(() => { moveCard('b:0', 'w:0'); const ok1 = __ashen.G.wands[0].slots[0] === 'requiem'; moveCard('b:1', 'w:3'); return { ok1, n: window.__lgDenied, msg: window.__lgDenyMsg, s3: __ashen.G.wands[0].slots[3] }; });
 U('editor', r.ok1 && r.n === 2 && /only 1 Legendary/.test(r.msg) && r.s3 === null, 'gold slot accepts it; a 2nd Legendary is refused: "' + r.msg + '"');
-await pg.evaluate(() => { const w = lgOrnate(makeWand({ name: 'Four-Leaf Codex', slots: ['requiem', null, 'spark', null, null, null], delay: .2, recharge: .4, maxMana: 200, mana: 200, regen: 50 })); __ashen.G.wands = [w]; __ashen.G.bag = ['starfall', 'timefracture', 'abyssalmaw', 'heavy', null, null, null, null]; editor(); });
+await pg.evaluate(() => { const w = lgOrnate(makeWand({ name: 'Four-Leaf Codex', slots: ['requiem', null, 'spark', null, null, null], delay: .2, recharge: .4, maxMana: 200, mana: 200, regen: 50 }), 2); __ashen.G.wands = [w]; __ashen.G.bag = ['starfall', 'timefracture', 'abyssalmaw', 'heavy', null, null, null, null]; editor(); });
 await sleep(150);
 r = await pg.evaluate(() => { const gold = document.querySelectorAll('#wslots .slot.gold').length, orn = !!document.querySelector('#wslots.ornate'), note = document.querySelector('.goldnote').textContent; moveCard('b:1', 'w:1'); const ok2 = __ashen.G.wands[0].slots[1] === 'timefracture'; moveCard('b:2', 'w:3'); return { gold, orn, note, ok2, msg: window.__lgDenyMsg, s3: __ashen.G.wands[0].slots[3] }; });
 U('editor', r.gold === 2 && r.orn && /holds 2/.test(r.note) && r.ok2 && /only 2/.test(r.msg) && r.s3 === null, 'ornate grimoire: 2 gold slots hold 2 Legendaries; a 3rd is refused ("' + r.msg + '")');
@@ -183,12 +200,28 @@ U('drops', r.m === 1, 'merchants very rarely sell an ornate grimoire (after ' + 
 U('drops', r.e >= 1 && r.eo === 1, 'elites can drop Legendaries and ornate grimoires (both seen within ' + r.tries.e + ' elite rewards)');
 r = await pg.evaluate(() => { const n = 4000, r0 = rng; let leg = 0; try { rng = Math.random; for (let i = 0; i < n; i++) { if (Math.random() < .05) leg++; } } finally { rng = r0; } return CARD_POOL.some(id => CARDS[id].leg) ? -1 : leg; });
 U('drops', r >= 0, 'Legendaries never appear in ordinary rewards (absent from the page pools)');
+// Gilded Binding at the altar and the merchant
+r = await pg.evaluate(() => { const G = __ashen.G; G.wands = [makeWand({ name: 'Plain', slots: ['spark', null, null], delay: .2, recharge: .4, maxMana: 200, mana: 200, regen: 50 })]; G.active = 0; G.maxFlame = 100; G.flame = 90; G.step = 2; let t = 0; for (; t < 400 && !document.getElementById('bind'); t++) shrine();
+  const found = !!document.getElementById('bind'), txt = found && document.getElementById('bind').textContent; const mf = G.maxFlame; if (found) document.getElementById('bind').click(); return { t, found, txt, gold: lgGoldN(G.wands[0]), dmf: mf - G.maxFlame, mode }; });
+U('binding', r.found && r.gold === 2 && r.dmf === 8, 'altars sometimes offer a Gilded Binding (seen after ' + r.t + ' altars): "' + r.txt + '" → 2 gold slots, −8 max HP');
+r = await pg.evaluate(() => { const G = __ashen.G; G.wands = [makeWand({ name: 'Tome A', slots: ['spark', null, null], delay: .2, recharge: .4, maxMana: 200, mana: 200, regen: 50 }), Object.assign(makeWand({ name: 'Codex B', slots: ['spark', null, null, null, null, null], delay: .2, recharge: .4, maxMana: 200, mana: 200, regen: 50 }), { ornate: true, gold: 4 })]; G.flame = 95; G.maxFlame = 100; let t = 0;
+  for (; t < 400 && !document.getElementById('buyB'); t++) merchant(); const found = !!document.getElementById('buyB'), dis = found && document.getElementById('buyB').disabled; if (found) document.getElementById('buyB').click();
+  const pick = !!document.getElementById('bw0'), b1dis = !!(document.getElementById('bw1') || {}).disabled; if (pick) document.getElementById('bw0').click();
+  return { t, found, dis, pick, b1dis, gold: lgGoldN(G.wands[0]), hp: G.flame, back: !!document.getElementById('buyW') || !!document.getElementById('leave'), gone: !document.getElementById('buyB') }; });
+U('binding', r.found && !r.dis && r.pick && r.b1dis && r.gold === 2 && r.hp === 65 && r.gone, 'merchants sometimes sell a Gilded Binding (after ' + r.t + '): grimoire picker (4-gold one disabled) → +1 gold slot, −30 HP, item sold');
+await pg.screenshot({ path: '/workspace/ashen-shots/lg-merchant-after-binding-390.png' });
 // ?debug=legendary
 const p2 = await b.newPage(); const e2 = []; p2.on('pageerror', e => e2.push(e.message)); p2.on('console', m => m.type() === 'error' && e2.push(m.text()));
 await p2.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 await p2.goto(base + '/?debug=legendary'); await p2.waitForFunction('window.__ready'); await p2.click('#go'); await sleep(300);
-r = await p2.evaluate(() => { const G = __ashen.G, all = G.wands.flatMap(w => w.slots).concat(G.bag).filter(x => x && CARDS[x].leg); return { n: new Set(all).size, orn: G.wands[0].ornate, gold: lgGoldN(G.wands[0]) }; });
-U('debug', r.n === 18 && r.orn && r.gold === 2, '?debug=legendary gives all 18 Legendaries + a 2-gold-slot ornate grimoire');
+r = await p2.evaluate(() => { const G = __ashen.G, all = G.wands.flatMap(w => w.slots).concat(G.bag).filter(x => x && CARDS[x].leg); return { n: new Set(all).size, orn: G.wands[0].ornate, gold: lgGoldN(G.wands[0]), four: G.wands[0].slots.slice(0, 4).filter(x => x && CARDS[x].leg).length }; });
+U('debug', r.n === 18 && r.orn && r.gold === 4 && r.four === 4, '?debug=legendary gives all 18 Legendaries + a 4-gold-slot ornate grimoire with 4 Legendaries stacked');
+await p2.evaluate(() => { edWand = 0; editor(showMap); }); await sleep(300);
+r = await p2.evaluate(() => ({ gold: document.querySelectorAll('#wslots .slot.gold').length, legIn: document.querySelectorAll('#wslots .slot.gold .chip.leg').length, note: document.querySelector('.goldnote').textContent, burn: !!document.getElementById('burnzone'), over: (() => { const d = document.getElementById('ui'); return d.scrollWidth > d.clientWidth + 1; })() }));
+U('debug', r.gold === 4 && r.legIn === 4 && /holds 4/.test(r.note) && /maximum/.test(r.note) && r.burn && !r.over, 'debug editor: 4 ♛ gold slots filled with Legendaries, note "' + r.note + '", brazier shown, no horizontal overflow');
+await p2.screenshot({ path: '/workspace/ashen-shots/lg-editor-gold4-390.png' });
+r = await p2.evaluate(() => { moveCard('b:0', 'w:4'); return window.__lgDenyMsg; });
+U('debug', /only 4 Legendary/.test(r) && /4 is the most/.test(r), 'a 5th Legendary in a 4-gold grimoire is refused: "' + r + '"');
 await p2.close();
 let up = 0, uf = 0; for (const x of ui) { if (x.ok) up++; else uf++; console.log((x.ok ? '  ✓ ' : '  ✗ ') + x.id.padEnd(15) + x.m); }
 console.log(`UI: ${up} passed, ${uf} failed; page errors: ${errs.length + e2.length}`); if (errs.length + e2.length) console.log(errs.concat(e2).slice(0, 8));
