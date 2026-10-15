@@ -79,6 +79,40 @@ for (const p of [A, B]) await p.click('#rw0');
 await waitF(A, () => __ashen.mode === 'wait'); await H.click('#rw0'); await waitF(H, () => __ashen.mode === 'map');
 await waitF(H, () => __coop.NET.ready.size === 2, 8000).then(() => ok(true, 'host map shows both guests ready'), () => ok(false, 'guests ready'));
 ok(await ev(A, () => __ashen.G.bag.filter(Boolean).length) >= 2, 'guest got its own reward page');
+// ---- Legendary pages in co-op: each mage brings an ornate grimoire with 2 Legendaries in its gold slots ----
+const LG = { H: ['cathedralfall', 'ossuary', 'spark', 'spark', 'spark', 'spark'], A: ['lastpage', 'hereticmark', 'spark', 'heavy', 'fireball', 'spark'], B: ['grimoireecho', 'eternalflame', 'ice', 'spark'] };
+for (const [p, k] of [[H, 'H'], [A, 'A'], [B, 'B']]) await ev(p, sl => { const w = lgOrnate(makeWand({ name: 'Four-Leaf Codex', slots: sl.concat([null, null]), delay: sl[0] === 'cathedralfall' ? .45 : .15, recharge: .3, maxMana: 600, mana: 600, regen: 200 })); __ashen.G.wands[0] = w; __ashen.G.active = 0; window.__lgS = 0; const _au = au; au = (...a) => { if (/^lg/.test(a[0])) window.__lgS++; return _au(...a); }; }, LG[k]);
+// Bryn's Last Page needs a best spell first: fireball (host side copy)
+await ev(H, () => enterDoor('fight'));
+await waitF(A, () => __ashen.mode === 'room'); await waitF(B, () => __ashen.mode === 'room');
+await waitF(H, () => [...__coop.NET.peers.values()].filter(q => q.inRoom && q.wand && q.wand.ornate).length === 2, 10000).then(() => ok(true, 'host runs both guests\' ornate grimoires'), () => ok(false, 'guest ornate wands on host'));
+const god2 = setInterval(() => { H.evaluate(() => { __ashen.P.inv = 9; for (const q of __coop.NET.peers.values()) q.inv = 9; if (__ashen.room) for (const f of __ashen.room.foes) if (f.hp < 25 && !f.boss) f.hp = 25; }).catch(() => { }); }, 250);
+const LK = new Set(), lv = { A: 0, B: 0 }, st = { v: 0 }, wl = { H: 0, A: 0, B: 0 }, al = { A: 0, B: 0 }, orn = { A: 0, B: 0 };
+for (let i = 0; i < 40; i++) {
+  (await ev(H, () => __ashen.room ? __ashen.room.shots.filter(s => CARDS[s.kind].leg || s.lv).map(s => s.kind + (s.lv ? '+lv' : '')) : [])).forEach(x => LK.add(x));
+  for (const [p, k] of [[A, 'A'], [B, 'B']]) { const r = await ev(p, () => __coop.room ? { lv: __coop.room.shots.reduce((m, s) => m | (s.lv || 0), 0), st: __coop.room.foes.reduce((m, f) => m | (f.heretic ? 256 : 0) | (f.bondT ? 512 : 0) | (f.rage ? 1024 : 0), 0), w: (__coop.room.walls || []).length, a: (__coop.room.allies || []).length, o: __coop.room.others.filter(o => o.orn).length } : null); if (!r) continue; lv[k] |= r.lv; st.v |= r.st; wl[k] = Math.max(wl[k], r.w); al[k] = Math.max(al[k], r.a); orn[k] = Math.max(orn[k], r.o); }
+  wl.H = Math.max(wl.H, await ev(H, () => __ashen.room ? (__ashen.room.walls || []).length : 0)); st.h = (st.h || 0) + await ev(H, () => __ashen.room ? __ashen.room.foes.filter(f => f.heretic > 0).length : 0);
+  if (i === 18) { await B.screenshot({ path: SH + tag + '-legend-guestB-390x844.png' }); await H.screenshot({ path: SH + tag + '-legend-host-390x844.png' }); await A.screenshot({ path: SH + tag + '-legend-guestA-1280x800.png' }); }
+  await sleep(200);
+}
+ok(['cathedralfall', 'eternalflame'].every(k => [...LK].some(x => x.startsWith(k))) && [...LK].some(x => x.endsWith('+lv')), 'host simulates Legendary pages from all mages: ' + [...LK].join(','));
+ok(lv.A & 64 && lv.B & 256, 'guests receive Legendary glyph overlays (A ' + lv.A + ', B ' + lv.B + ')');
+ok(st.v & 256, 'guests see Heretic\'s Mark on enemies (status bits ' + st.v + ', host samples ' + st.h + ')');
+ok(wl.H > 0 && wl.A > 0 && wl.B > 0, `rubble walls synced (host ${wl.H}, A ${wl.A}, B ${wl.B})`);
+ok(orn.A === 2 && orn.B === 2, 'guests see the other mages\' ornate covers');
+console.log('INFO skeleton allies seen on guests: A ' + al.A + ', B ' + al.B);
+const lp = { A: await ev(A, () => ({ slots: __ashen.G.wands[0].slots.join(','), ack: __coop.NET.lpAck || 0 })), H: await ev(H, () => { const q = [...__coop.NET.peers.values()].find(q => q.name === 'Bryn'); return { burn: q.lpBurn || 0, slots: q.wand.slots.join(',') }; }) };
+ok(lp.H.burn === 1 && !/lastpage/.test(lp.H.slots) && !/lastpage/.test(lp.A.slots) && lp.A.ack === 1, 'The Last Page burns once and is removed from the guest\'s own grimoire (host burns ' + lp.H.burn + ', guest ack ' + lp.A.ack + ')');
+const sn = { A: await ev(A, () => window.__lgS), B: await ev(B, () => window.__lgS) }; ok(sn.A > 0 && sn.B > 0, `guests hear Legendary sounds (A ${sn.A}, B ${sn.B})`);
+// guest edits its grimoire after the burn: the Last Page must not come back on the host
+await ev(A, () => { __ashen.G.wands[0].slots[5] = 'spark'; }); await sleep(800);
+ok(!(await ev(H, () => [...__coop.NET.peers.values()].find(q => q.name === 'Bryn').wand.slots.includes('lastpage'))), 'burned Last Page stays gone after the guest changes its grimoire');
+// guest standing ritual: Starfall charged by a guest on the host
+await ev(B, () => { __ashen.G.wands[0].slots = ['starfall', 'spark', null, null, null, null]; }); await sleep(3800);
+ok(await ev(H, () => { const q = [...__coop.NET.peers.values()].find(q => q.name === 'Cass'); return __ashen.room && __ashen.room.shots.some(s => (s.kind === 'starfall' && s.owner === q) || (s.kind === 'meteor')); }), 'a guest\'s Starfall Rite charges and rains on the host');
+clearInterval(god2);
+{ const t1 = Date.now(); while (Date.now() - t1 < 40000) { const m = await ev(H, () => { if (__ashen.room) for (const f of __ashen.room.foes) { f.hp = Math.min(f.hp, .01); f.spawnT = 0; } return __ashen.mode; }); if (m !== 'room') break; await sleep(250); } }
+await waitF(A, () => __ashen.mode === 'pick', 15000).then(() => ok(true, 'Legendary room cleared for all'), () => ok(false, 'legendary room clear'));
 // host leaves -> guests get a clear message
 await H.close(); await waitF(A, () => /Co-op ended/.test(document.body.innerText), 15000).then(() => ok(true, 'host leaving ends the run for guests with a message'), () => ok(false, 'host-left message'));
 await A.screenshot({ path: SH + tag + '-hostleft-1280x800.png' });

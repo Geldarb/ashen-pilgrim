@@ -112,7 +112,7 @@ if (typeof startCoopRun === 'function') { const _sc = startCoopRun; startCoopRun
 // ---------- helpers ----------
 function lgFrac(o) { if (!o) return 1; if (o === P) return G ? G.flame / G.maxFlame : 1; if (o.hp != null && o.maxHp) return o.hp / o.maxHp; return 1; }
 function lgHeal(o, n) { if (!o) return; if (o === P) { if (G && !(room && room.guest)) G.flame = Math.min(G.maxFlame, G.flame + n); } else if (o.hp != null && o.maxHp) o.hp = Math.min(o.maxHp, o.hp + n); }
-function lgSnd(world, name, x, arg) { if (world !== room) return; au(name, x, arg); world.fxs.push({ type: 'snd', x: x || 0, y: 0, life: .06, txt: name, c: arg || '' }); }
+function lgSnd(world, name, x, arg) { if (world !== room) return; au(name, x, arg); world.fxs.push({ type: 'snd', x: x || 0, y: 0, life: .3, txt: name, c: arg || '' }); }
 function lgSpawnFrom(world, s, spec, x, y, a) {
   const kc = world.caster, kw = world.curWand; world.caster = s.owner || kc; world.curWand = s.wand || kw;
   let n = null; try { n = spawnShot(world, spec, x, y, a); } finally { world.caster = kc; world.curWand = kw; }
@@ -478,7 +478,7 @@ function lgShape(b, C, r, a) {
       return;
     }
     case 'ossuary': {
-      const k = Math.min(1, t / .5), R = 10 + k * 26; cx.globalAlpha *= Math.max(0, Math.min(1, (b.life || 0) * 3));
+      const k = Math.min(1, t / .5), R = 10 + k * 26; cx.globalAlpha *= Math.max(0, Math.min(1, (b.life == null ? 1 : b.life) * 3));
       cx.strokeStyle = '#d8e8c8'; cx.lineWidth = 1.2; cx.beginPath(); cx.ellipse(0, 8, R, R * .4, 0, 0, TAU); cx.stroke();
       cx.fillStyle = '#e8e0c8'; for (let i = 0; i < 8; i++) { const q = i * TAU / 8 + t * 2, x = Math.cos(q) * R, y = 8 + Math.sin(q) * R * .4; cx.save(); cx.translate(x, y); cx.rotate(q); cx.fillRect(-3, -.8, 6, 1.6); cx.beginPath(); cx.arc(-3, 0, 1.4, 0, TAU); cx.arc(3, 0, 1.4, 0, TAU); cx.fill(); cx.restore(); }
       return;

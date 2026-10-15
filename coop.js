@@ -91,7 +91,7 @@ function hostMsg(from, d) {
   const q = peerOf(from);
   if (d.k === 'st') {
     const wasIn = q.inRoom; q.cls = d.cls; q.name = d.name || q.name;
-    if (d.w) { const key = JSON.stringify(d.w); if (key !== q.wandKey) { q.wandKey = key; q.wand = makeWand(Object.assign({}, d.w, { idx: 0, cd: .4 })); q.wand.mana = mmax(q.wand); q.sg = null; } }
+    if (d.w) { const key = JSON.stringify(d.w); if (key !== q.wandKey) { q.wandKey = key; q.wand = makeWand(Object.assign({}, d.w, { idx: 0, cd: .4 })); q.wand.mana = mmax(q.wand); q.sg = null; for (let n = (q.lpBurn || 0) - (d.lb || 0); n > 0; n--) { const i = q.wand.slots.indexOf('lastpage'); if (i < 0) break; q.wand.slots[i] = null; } } }
     if (!room || !d.inRoom) { q.hp = d.hp; q.maxHp = d.maxHp; q.inRoom = false; q.down = false; NET.ready[d.ready ? 'add' : 'delete'](from); if (d.ready !== q.lastReady) { q.lastReady = d.ready; if (mode === 'map' && document.getElementById('door0')) showMap(); } return; }
     if (!wasIn) { q.inRoom = true; q.hp = d.hp; q.maxHp = d.maxHp; q.em = 0; q.down = false; q.inv = 1; }
     if (!q.down) { q.x = dx_(d.x); q.y = dy_(d.y); q.face = d.face; q.walk = d.walk; if (d.dodge && !q.dodge) dodgeSigils(q, q.wand, room); q.dodge = d.dodge; }
@@ -136,14 +136,15 @@ update = dt => {
 function makeSnap() {
   const A = arena(), r2 = v => Math.round(v * 10) / 10;
   const fxs = []; for (const f of room.fxs) if (!f._s && f.type !== 'sfx') { f._s = 1; fxs.push({ type: f.type, x: nx(f.x), y: ny(f.y), x2: f.x2 != null ? nx(f.x2) : undefined, y2: f.y2 != null ? ny(f.y2) : undefined, r: f.r, R: f.R, n: f.n, life: f.life, c: f.c, txt: f.txt }); }
-  const pl = [[NET.id, nx(P.x), ny(P.y), r2(P.face), r2(P.walk), Math.ceil(G.flame), G.maxFlame, P.down ? 1 : 0, r2(P.castT || 0), wand().hue, leavesOf(wand()), G.cls, r2(P.rev || 0), 0, sigList(wand()), P.shield ? 1 : 0]];
-  for (const q of livePeers()) pl.push([q.id, nx(q.x), ny(q.y), r2(q.face), r2(q.walk), Math.ceil(q.hp), q.maxHp, q.down ? 1 : 0, r2(q.castT), q.wand ? q.wand.hue : 30, q.wand ? leavesOf(q.wand) : 1, q.cls, r2(q.rev || 0), q.em, sigList(q.wand), q.shield ? 1 : 0]);
+  const pl = [[NET.id, nx(P.x), ny(P.y), r2(P.face), r2(P.walk), Math.ceil(G.flame), G.maxFlame, P.down ? 1 : 0, r2(P.castT || 0), wand().hue, leavesOf(wand()), G.cls, r2(P.rev || 0), 0, sigList(wand()), P.shield ? 1 : 0, wand().ornate ? 1 : 0, 0]];
+  for (const q of livePeers()) pl.push([q.id, nx(q.x), ny(q.y), r2(q.face), r2(q.walk), Math.ceil(q.hp), q.maxHp, q.down ? 1 : 0, r2(q.castT), q.wand ? q.wand.hue : 30, q.wand ? leavesOf(q.wand) : 1, q.cls, r2(q.rev || 0), q.em, sigList(q.wand), q.shield ? 1 : 0, q.wand && q.wand.ornate ? 1 : 0, q.lpBurn || 0]);
   return {
     k: 'snap', kind: room.kind, aw: A.x1 - A.x0, ah: A.y1 - A.y0, done: room.done ? 1 : 0, fl: G.floor, st: G.step,
-    foes: room.foes.map(f => [f.id, f.type, nx(f.x), ny(f.y), Math.ceil(f.hp), Math.ceil(f.max), f.elite ? 1 : 0, f.boss ? 1 : 0, f.hit > 0 ? 1 : 0, f.phase, r2(Math.max(0, f.spawnT)), f.burn > 0 ? 1 : 0, f.frozen > 0 ? 1 : 0, f.poison > 0 ? 1 : 0, r2(f.r), r2(tellOf(f)), f.face || 1, (f.stun > 0 ? 1 : 0) | (f.mark > 0 ? 2 : 0) | (f.silence > 0 ? 4 : 0) | (f.slowT > 0 ? 8 : 0) | (f.hex > 0 ? 16 : 0) | (f.gild > 0 ? 32 : 0) | (f.lunge > 0 ? 64 : 0) | (f.phaseT > 0 ? 128 : 0)]),
-    shots: room.shots.slice(-140).map(b => [b.kind, nx(b.x), ny(b.y), Math.round(b.vx), Math.round(b.vy), r2(b.r), b.col, b.el || 0, r2(b.age), r2(b.spin || 0), b.novaR != null ? r2(b.novaR) : -1, b.tx != null ? nx(b.tx) : -1, b.ty != null ? ny(b.ty) : -1, (b.trig ? 1 : 0) | (b.homing ? 2 : 0) | (b.poison ? 4 : 0), b.ov || 0, b.grow || 0, r2(b.wz || 0), ...(A_ => A_ ? [nx(A_.x), ny(A_.y)] : [-1, -1])(anchorOf(b)), r2(b.gy != null ? b.gy - b.y : 0), b.fateT > 0 ? 1 : 0]),
+    foes: room.foes.map(f => [f.id, f.type, nx(f.x), ny(f.y), Math.ceil(f.hp), Math.ceil(f.max), f.elite ? 1 : 0, f.boss ? 1 : 0, f.hit > 0 ? 1 : 0, f.phase, r2(Math.max(0, f.spawnT)), f.burn > 0 ? 1 : 0, f.frozen > 0 ? 1 : 0, f.poison > 0 ? 1 : 0, r2(f.r), r2(tellOf(f)), f.face || 1, (f.stun > 0 ? 1 : 0) | (f.mark > 0 ? 2 : 0) | (f.silence > 0 ? 4 : 0) | (f.slowT > 0 ? 8 : 0) | (f.hex > 0 ? 16 : 0) | (f.gild > 0 ? 32 : 0) | (f.lunge > 0 ? 64 : 0) | (f.phaseT > 0 ? 128 : 0) | (f.heretic > 0 ? 256 : 0) | (f.bondT > 0 ? 512 : 0) | (f.rage > 0 ? 1024 : 0)]),
+    shots: room.shots.slice(-140).map(b => [b.kind, nx(b.x), ny(b.y), Math.round(b.vx), Math.round(b.vy), r2(b.r), b.col, b.el || 0, r2(b.age), r2(b.spin || 0), b.novaR != null ? r2(b.novaR) : -1, b.tx != null ? nx(b.tx) : -1, b.ty != null ? ny(b.ty) : -1, (b.trig ? 1 : 0) | (b.homing ? 2 : 0) | (b.poison ? 4 : 0), b.ov || 0, b.grow || 0, r2(b.wz || 0), ...(A_ => A_ ? [nx(A_.x), ny(A_.y)] : [-1, -1])(anchorOf(b)), r2(b.gy != null ? b.gy - b.y : 0), b.fateT > 0 ? 1 : 0, b.lv || 0, b.tolls || 0]),
     es: room.eshots.map(b => [nx(b.x), ny(b.y), Math.round(b.vx), Math.round(b.vy), b.col || 0]),
     dr: room.drops.map(e => [nx(e.x), ny(e.y)]), wi: room.wisps.map(w => [nx(w.x), ny(w.y)]), fxs, pl,
+    lg: [(room.walls || []).map(w => [nx(w.x), ny(w.y), r2(w.r), r2(w.life), w.seed]), (room.allies || []).map(a => [nx(a.x), ny(a.y), a.face || 1, r2(Math.max(0, a.raise)), r2(a.life), r2(a.swing || 0), r2(a.walk || 0)])],
   };
 }
 const _cleared = roomCleared;
@@ -214,7 +215,7 @@ function clientUpdate(dt) {
 function sendState(inRoom) {
   const w = wand();
   toHost({ k: 'st', inRoom, x: nx(P.x), y: ny(P.y), face: +P.face.toFixed(2), walk: +P.walk.toFixed(2), dodge: P.dodgeT > 0 ? 1 : 0, hp: Math.ceil(G.flame), maxHp: G.maxFlame, cls: G.cls, name: myName(), ready: mode === 'wait',
-    w: { name: w.name, slots: w.slots, delay: w.delay, recharge: w.recharge, maxMana: w.maxMana, regen: w.regen, hue: w.hue, leaves: w.leaves } });
+    w: { name: w.name, slots: w.slots, delay: w.delay, recharge: w.recharge, maxMana: w.maxMana, regen: w.regen, hue: w.hue, leaves: w.leaves, ornate: !!w.ornate }, lb: NET.lpAck || 0 });
 }
 setInterval(() => { if (NET.on && !NET.host && G && G.coop && mode !== 'room') sendState(false); }, 500);
 function applySnap(s) {
@@ -225,23 +226,24 @@ function applySnap(s) {
     const [id, type, x, y, hp, max, elite, boss, hit, phase, spawnT, burn, frozen, poison, r, tell, face, st] = a; seen.add(id);
     let f = NET.foeMap.get(id); const X = dx_(x), Y = dy_(y);
     if (!f) { f = { id, type, x: X, y: Y, t: Math.random() * 9, kx: 0, ky: 0 }; NET.foeMap.set(id, f); }
-    Object.assign(f, { tx: X, ty: Y, hp, max, elite: !!elite, boss: !!boss, phase, spawnT, burn: burn ? 1 : 0, frozen: frozen ? 1 : 0, poison: poison ? 1 : 0, r, tell: tell || 0, face: face || 1, stun: st & 1 ? 1 : 0, mark: st & 2 ? 1 : 0, silence: st & 4 ? 1 : 0, slowT: st & 8 ? 1 : 0, hex: st & 16 ? 1 : 0, gild: st & 32 ? 1 : 0, lunge: st & 64 ? 1 : 0, phaseT: st & 128 ? 1 : 0 }); if (hit) { f.hit = .08; au('hit', f); }
+    Object.assign(f, { tx: X, ty: Y, hp, max, elite: !!elite, boss: !!boss, phase, spawnT, burn: burn ? 1 : 0, frozen: frozen ? 1 : 0, poison: poison ? 1 : 0, r, tell: tell || 0, face: face || 1, stun: st & 1 ? 1 : 0, mark: st & 2 ? 1 : 0, silence: st & 4 ? 1 : 0, slowT: st & 8 ? 1 : 0, hex: st & 16 ? 1 : 0, gild: st & 32 ? 1 : 0, lunge: st & 64 ? 1 : 0, phaseT: st & 128 ? 1 : 0, heretic: st & 256 ? 1 : 0, bondT: st & 512 ? 1 : 0, rage: st & 1024 ? 1 : 0 }); if (hit) { f.hit = .08; au('hit', f); }
   }
   for (const [id, f] of NET.foeMap) if (!seen.has(id)) { NET.foeMap.delete(id); G.kills++; corpse(f); au('death', f); for (let i = 0; i < 14; i++) room.parts.push({ x: f.x, y: f.y, vx: (Math.random() - .5) * 220, vy: (Math.random() - .5) * 220, life: .6, c: i % 2 ? '#ff8a2a' : '#3a3428', s: 3 }); }
   room.foes = [...NET.foeMap.values()];
   const nNew = s.shots.filter(b => b[8] < .1).length; if (nNew) { const b = s.shots.find(b => b[8] < .1); au('castGuest', b[7] || '', b[0]); }
-  room.shots = s.shots.map(([kind, x, y, vx, vy, r, col, el, age, spin, novaR, tx, ty, fl, ov, grow, wz, ax, ay, gy, fate]) => ({ ov, grow, wz: wz || 0, ax: ax >= 0 ? dx_(ax) : undefined, ay: ay >= 0 ? dy_(ay) : undefined, gy: gy ? dy_(y) + gy : undefined, fateT: fate ? .1 : 0, armT: CARDS[kind] && CARDS[kind].grave ? .28 : undefined, kind, x: dx_(x), y: dy_(y), vx, vy, r, col, el: el || undefined, age, spin, novaR: novaR >= 0 ? novaR : undefined, tx: tx >= 0 ? dx_(tx) : undefined, ty: ty >= 0 ? dy_(ty) : undefined, trig: fl & 1, homing: fl & 2, poison: fl & 4, hit: [] }));
+  room.shots = s.shots.map(([kind, x, y, vx, vy, r, col, el, age, spin, novaR, tx, ty, fl, ov, grow, wz, ax, ay, gy, fate, lv, tolls]) => ({ ov, lv: lv || 0, tolls: tolls || 0, grow, wz: wz || 0, ax: ax >= 0 ? dx_(ax) : undefined, ay: ay >= 0 ? dy_(ay) : undefined, gy: gy ? dy_(y) + gy : undefined, fateT: fate ? .1 : 0, armT: CARDS[kind] && CARDS[kind].grave ? .28 : undefined, kind, x: dx_(x), y: dy_(y), vx, vy, r, col, el: el || undefined, age, spin, novaR: novaR >= 0 ? novaR : undefined, tx: tx >= 0 ? dx_(tx) : undefined, ty: ty >= 0 ? dy_(ty) : undefined, trig: fl & 1, homing: fl & 2, poison: fl & 4, hit: [] }));
   room.eshots = s.es.map(([x, y, vx, vy, col]) => ({ x: dx_(x), y: dy_(y), vx, vy, col: col || undefined }));
   room.drops = s.dr.map(([x, y], i) => ({ x: dx_(x), y: dy_(y), t: i }));
   room.wisps = s.wi.map(([x, y]) => ({ x: dx_(x), y: dy_(y), life: 1 }));
   for (const f of s.fxs) room.fxs.push(Object.assign({}, f, { x: dx_(f.x), y: dy_(f.y), x2: f.x2 != null ? dx_(f.x2) : undefined, y2: f.y2 != null ? dy_(f.y2) : undefined }));
   room.done = !!s.done;
+  if (s.lg) { const k = room.scale || 1; room.walls = s.lg[0].map(([x, y, r, life, seed]) => ({ x: dx_(x), y: dy_(y), r: r * k, life, max: life + 1, seed })); room.allies = s.lg[1].map(([x, y, face, raise, life, swing, walk]) => ({ x: dx_(x), y: dy_(y), r: 11, face, raise, life, swing, walk })); }
   const others = [];
-  for (const [id, x, y, face, walk, hp, maxHp, down, castT, hue, leaves, cls, rev, em, sigs, shield] of s.pl) {
+  for (const [id, x, y, face, walk, hp, maxHp, down, castT, hue, leaves, cls, rev, em, sigs, shield, orn, lpb] of s.pl) {
     const pl = NET.players.find(p => p.id === id) || { name: 'Mage', slot: 0 };
-    if (id === NET.id) { const was = P.down; if (hp < G.flame - .5) { P.hurt = .25; shake = 5; au('hurt'); buzz(35, 'hurt'); } G.flame = hp; G.maxFlame = maxHp; P.down = !!down; P.rev = rev; P.castT = castT; P.shield = !!shield; if (NET.em0 + em > G.embersRun) au('pickup'); G.embersRun = NET.em0 + em; if (P.down && !was) toast('💀 You are down — an ally can revive you!', 1800); if (!P.down && was) { toast('✚ You were revived!'); au('revive'); } continue; }
+    if (id === NET.id) { const was = P.down; if (hp < G.flame - .5) { P.hurt = .25; shake = 5; au('hurt'); buzz(35, 'hurt'); } G.flame = hp; G.maxFlame = maxHp; P.down = !!down; P.rev = rev; P.castT = castT; P.shield = !!shield; if (NET.em0 + em > G.embersRun) au('pickup'); G.embersRun = NET.em0 + em; if (lpb > (NET.lpAck || 0)) { const w = wand(), i = w.slots.indexOf('lastpage'); if (i >= 0) { w.slots[i] = null; w.idx = 0; toast('📃 The Last Page burns away…', 1800); saveRun(); } NET.lpAck = lpb; } if (P.down && !was) toast('💀 You are down — an ally can revive you!', 1800); if (!P.down && was) { toast('✚ You were revived!'); au('revive'); } continue; }
     const prev = room.others.find(o => o.id === id), X = dx_(x), Y = dy_(y);
-    others.push({ id, name: pl.name, slot: pl.slot, x: prev ? prev.x : X, y: prev ? prev.y : Y, tx: X, ty: Y, face, walk, hp, maxHp, down: !!down, castT, hue, leaves, cls, rev, sigs, shield: !!shield });
+    others.push({ id, name: pl.name, slot: pl.slot, x: prev ? prev.x : X, y: prev ? prev.y : Y, tx: X, ty: Y, face, walk, hp, maxHp, down: !!down, castT, hue, leaves, cls, rev, sigs, shield: !!shield, orn: !!orn });
   }
   room.others = others;
 }
@@ -256,14 +258,14 @@ skill = () => { if (!(NET.on && !NET.host && room && room.guest)) return _skill(
 // ---------- drawing other mages ----------
 function mates() {
   if (!NET.on || !room) return [];
-  if (NET.host) return livePeers().map(q => ({ id: q.id, name: q.name, slot: q.slot, x: q.x, y: q.y, face: q.face, walk: q.walk, castT: q.castT, hue: q.wand ? q.wand.hue : 30, leaves: q.wand ? leavesOf(q.wand) : 1, cls: q.cls, hp: q.hp, maxHp: q.maxHp, down: q.down, rev: q.rev, sigs: sigList(q.wand), shield: q.shield }));
+  if (NET.host) return livePeers().map(q => ({ id: q.id, name: q.name, slot: q.slot, x: q.x, y: q.y, face: q.face, walk: q.walk, castT: q.castT, hue: q.wand ? q.wand.hue : 30, leaves: q.wand ? leavesOf(q.wand) : 1, cls: q.cls, hp: q.hp, maxHp: q.maxHp, down: q.down, rev: q.rev, sigs: sigList(q.wand), shield: q.shield, orn: !!(q.wand && q.wand.ornate) }));
   return room.others;
 }
 extraEnts = () => mates().map(o => ({ y: o.y, d: () => drawMate(o) }));
 function drawMate(o) {
   const t = performance.now() / 1000;
   drawSigils(o.x, o.y, o.sigs, t, o.shield);
-  MAGE_OV = { walk: o.walk, face: o.face, castT: o.castT, fl: clamp(o.hp / o.maxHp, .2, 1), hue: o.hue, leaves: o.leaves };
+  MAGE_OV = { walk: o.walk, face: o.face, castT: o.castT, fl: clamp(o.hp / o.maxHp, .2, 1), hue: o.hue, leaves: o.leaves, orn: !!o.orn };
   try { drawPilgrim(o.x, o.y, t, o.cls, o.down ? .45 : 1); } finally { MAGE_OV = null; }
   tag(o.x, o.y, o.name, slotCol(o.slot), o.hp / o.maxHp, o.down, o.rev);
 }
