@@ -259,6 +259,7 @@ function drawShape(b, C, r, a) {
 // glyph overlays: each new glyph leaves its own mark on the spell it powers
 function drawOverlays(b, r, a) {
   if (b.lv) lgOverlays(b, r, a);
+  if (b.mv && window.myOverlays) myOverlays(b, r, a);
   const o = b.ov || 0; if (!o) return; const sp = b.spin;
   if (o & 1) { cx.globalAlpha *= .35; cx.strokeStyle = b.col || '#fff'; cx.lineWidth = 1; cx.beginPath(); cx.arc(-Math.cos(a) * 9, -Math.sin(a) * 9, r + 1, 0, TAU); cx.stroke(); cx.globalAlpha /= .35; }
   if (o & 2) { cx.strokeStyle = '#b06aff'; cx.lineWidth = .9; cx.beginPath(); for (let i = 0; i <= 3; i++) { const q = sp * .6 + i * TAU / 3; cx.lineTo(Math.cos(q) * (r + 5), Math.sin(q) * (r + 5)); } cx.stroke(); }
@@ -590,8 +591,8 @@ function panel(html, cls = '') { stopPreview(); UI.innerHTML = '<div class="pane
 function closeUI() { stopPreview(); UI.innerHTML = ''; }
 function on(id, f) { const e = document.getElementById(id); if (e) e.onclick = f; }
 const SHORT = { critburn: 'Crit on Burn', smallfast: 'Small+Fast', trigger: 'Trigger Bolt', behind: 'Behind+Fwd', blackhole: 'Black Hole', sickle: 'Sickle', bolt: 'Lightning', missile: 'Missile', chain: 'Chain Ltng', burst: 'Bounce Burst', skull: 'Grave Skull', explode: 'Explode', freeze: 'Freeze', wisp: 'Wisp', deathtrig: 'Death Trig', expiry: 'Expiry Trig', lifesteal: 'Lifesteal', knock: 'Knockback' };
-const cardChip = (id, extra = '') => id ? `<div class="chip t-${CARDS[id].t}${CARDS[id].leg ? ' leg' : ''}" data-card="${id}" title="${CARDS[id].name}" ${extra}><i>${CARDS[id].icon}</i><u>${SHORT[id] || CARDS[id].name}</u></div>` : '';
-function cardRow(id, attrs = '', label) { const c = CARDS[id]; return `<button class="card t-${c.t}${c.leg ? ' leg' : ''}" ${attrs}><span class="ic">${c.icon}</span><div><b>${label || c.name}</b><span><em>${c.leg ? 'Legendary ' : ''}${TYPE_NAME[c.t]}</em>${(c.rar || 1) > 1 && !c.leg ? ' · ' + RAR_NAME[c.rar] : ''} · ${c.mana ? c.mana + ' mana · ' : ''}${c.desc}${c.flav ? '<i class="flav">“' + c.flav + '”</i>' : ''}</span></div></button>`; }
+const cardChip = (id, extra = '') => id ? `<div class="chip t-${CARDS[id].t}${CARDS[id].leg ? ' leg' : CARDS[id].myth ? ' myth' : ''}" data-card="${id}" title="${CARDS[id].name}" ${extra}><i>${CARDS[id].icon}</i><u>${SHORT[id] || CARDS[id].name}</u></div>` : '';
+function cardRow(id, attrs = '', label) { const c = CARDS[id]; return `<button class="card t-${c.t}${c.leg ? ' leg' : c.myth ? ' myth' : ''}" ${attrs}><span class="ic">${c.icon}</span><div><b>${label || c.name}</b><span><em>${c.leg ? 'Legendary ' : c.myth ? 'Mythic ' : ''}${TYPE_NAME[c.t]}</em>${(c.rar || 1) > 1 && !c.leg && !c.myth ? ' · ' + RAR_NAME[c.rar] : ''} · ${c.mana ? c.mana + ' mana · ' : ''}${c.desc}${c.curse && window.__mythic ? ' <b class="cursetxt">' + __mythic.myCurseTxt(id) + '</b>' : ''}${c.flav ? '<i class="flav">“' + c.flav + '”</i>' : ''}</span></div></button>`; }
 function wandRow(w, attrs = '', label) { return `<button class="card t-wand${w.ornate ? ' ornate' : ''}" ${attrs}><span class="ic">${w.ornate ? ORNATE_SVG : '📖'}</span><div><b>${label || w.name}</b><span>${w.ornate || lgGoldN(w) > 1 ? '<em class="goldtxt">' + (w.ornate ? 'Rare ornate grimoire · ' : 'Gilded binding · ') + lgGoldN(w) + ' gold slots for Legendary pages</em> · ' : ''}${w.slots.length} slots · delay ${w.delay}s · recharge ${w.recharge}s · mana ${w.maxMana} (+${w.regen}/s)${w.slots.some(Boolean) ? ' · holds ' + w.slots.filter(Boolean).map(i => CARDS[i].name).join(', ') : ''}</span></div></button>`; }
 
 function showCamp() {
@@ -744,8 +745,8 @@ function editor(back) {
   panel(`<h2>📖 Grimoire</h2>
   ${G.wands.length > 1 ? `<div class="tabs">${G.wands.map((x, i) => `<button class="tab ${i === edWand ? 'on' : ''}" id="wt${i}">${x.name}</button>`).join('')}</div>` : `<p class="small">${w.name}</p>`}
   <p class="small">delay ${w.delay}s · recharge ${w.recharge}s · mana ${mmax(w)} (+${Math.round(mreg(w))}/s) · ${w.slots.length} slots</p>
-  <div class="slots wand${w.ornate ? ' ornate' : ''}" id="wslots">${w.slots.map((id, i) => `<div class="slot${lgGold(w, i) ? ' gold' : ''}" data-loc="w:${i}">${cardChip(id)}</div>`).join('')}</div>
-  <p class="small goldnote">♛ ${lgGoldN(w)} gold slot${lgGoldN(w) > 1 ? 's' : ''} — this grimoire holds ${lgGoldN(w)} Legendary page${lgGoldN(w) > 1 ? 's' : ''}${lgGoldN(w) < LG_MAXGOLD ? ' (a Gilded Binding adds one, max ' + LG_MAXGOLD + ')' : ' (the maximum)'}.</p>
+  <div class="slots wand${w.ornate ? ' ornate' : ''}" id="wslots">${w.slots.map((id, i) => `<div class="slot${lgGold(w, i) ? ' gold' : ''}${window.__mythic && __mythic.myIdx(w) === i ? ' myth' : ''}" data-loc="w:${i}">${cardChip(id)}</div>`).join('')}</div>
+  <p class="small goldnote">♛ ${lgGoldN(w)} gold slot${lgGoldN(w) > 1 ? 's' : ''} — this grimoire holds ${lgGoldN(w)} Legendary page${lgGoldN(w) > 1 ? 's' : ''}${lgGoldN(w) < LG_MAXGOLD ? ' (a Gilded Binding adds one, max ' + LG_MAXGOLD + ')' : ' (the maximum)'}.</p>${window.__mythic && w.myth ? (eq => `<p class="small mythnote">✶ Mythic slot (last): ${eq ? CARDS[eq].icon + ' ' + CARDS[eq].name + ' — ' + __mythic.myCurseOf(eq).icon + ' ' + __mythic.myCurseOf(eq).name + ' (' + __mythic.myCurseOf(eq).desc + ')' : 'empty — only a Mythic page fits here'}</p>`)(__mythic.myEquipped(w)) : ''}
   <canvas id="pv" width="300" height="120"></canvas>
   <p class="cast" id="castDesc">${describeCast(w)}</p>
   <p class="small">Satchel</p>

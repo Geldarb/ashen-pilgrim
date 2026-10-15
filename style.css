@@ -174,3 +174,21 @@ b.deny{color:#ff6a6a}
 .btn.burnbtn{border-color:#ff8a30;background:linear-gradient(#8a3a10,#4a1c06);color:#fff0d0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px}
 .btn.burnbtn span{font-size:12px;color:#ffd0a0}
 @media (prefers-reduced-motion:reduce){.brazier .flames,.brazier .fl2{animation:none}}
+/* ---- Mythic pages (mythic.js): black core, animated prismatic border ---- */
+@keyframes myprism{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+.chip.myth{border:2px solid transparent;color:#ffffff;background:linear-gradient(160deg,#000,#0c0814 55%,#000) padding-box,linear-gradient(90deg,#ff3a5a,#ffb02a,#f8ff4a,#4aff9a,#4ac8ff,#a04aff,#ff3a5a,#000,#ff3a5a) border-box;background-size:100% 100%,300% 100%;animation:myprism 3s linear infinite;box-shadow:0 0 8px rgba(180,120,255,.45)}
+.chip.myth u{color:#e8dcff}
+.card.myth{border:2px solid transparent;border-left-width:6px;background:linear-gradient(135deg,#000,#0e0a18 60%,#000) padding-box,linear-gradient(90deg,#ff3a5a,#ffb02a,#f8ff4a,#4aff9a,#4ac8ff,#a04aff,#ff3a5a,#000,#ff3a5a) border-box;background-size:100% 100%,300% 100%;animation:myprism 3s linear infinite;box-shadow:0 0 16px rgba(160,100,255,.35)}
+.card.myth b{color:#ffffff}.card.myth em{color:#c8b0ff}
+.cursetxt{display:block;color:#ff7a8a;font-weight:normal;font-size:12px;margin-top:3px}
+.t-myth{color:#d8c0ff}
+.slots.wand .slot.myth{border:2px solid transparent;position:relative;background:radial-gradient(circle at 50% 30%,rgba(160,100,255,.25),rgba(0,0,0,.8)) padding-box,linear-gradient(90deg,#ff3a5a,#f8ff4a,#4ac8ff,#a04aff,#ff3a5a) border-box;background-size:100% 100%,300% 100%;animation:myprism 3s linear infinite}
+.slots.wand .slot.myth::after{content:'✶';position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:11px;line-height:1;color:#fff;background:#000;border:1px solid #a04aff;border-radius:6px;padding:1px 3px;pointer-events:none}
+.slot.myth.pulse{animation:lgpulse .45s ease-in-out 2,myprism 3s linear infinite}
+.mythnote{color:#c8b0ff;margin:4px 0 2px}
+h2.mythh{background:linear-gradient(90deg,#ff3a5a,#f8ff4a,#4ac8ff,#a04aff,#ff3a5a);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:myprism 3s linear infinite}
+#myflash{position:fixed;inset:0;pointer-events:none;z-index:98;opacity:0;background:conic-gradient(from 0deg at 50% 45%,rgba(255,58,90,.6),rgba(248,255,74,.6),rgba(74,200,255,.6),rgba(160,74,255,.6),rgba(255,58,90,.6));mix-blend-mode:screen}
+#myflash::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,#fff 0,rgba(0,0,0,.0) 30%,rgba(0,0,0,.85) 75%)}
+#myflash.on{animation:myflash 1.3s ease-out}
+@keyframes myflash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.chip.myth,.card.myth,.slots.wand .slot.myth,h2.mythh{animation:none}#myflash.on{animation-duration:.3s}}

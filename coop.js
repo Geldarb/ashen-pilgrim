@@ -147,10 +147,10 @@ function makeSnap() {
   return {
     k: 'snap', kind: room.kind, aw: A.x1 - A.x0, ah: A.y1 - A.y0, done: room.done ? 1 : 0, fl: G.floor, st: G.step,
     foes: room.foes.map(f => [f.id, f.type, nx(f.x), ny(f.y), Math.ceil(f.hp), Math.ceil(f.max), f.elite ? 1 : 0, f.boss ? 1 : 0, f.hit > 0 ? 1 : 0, f.phase, r2(Math.max(0, f.spawnT)), f.burn > 0 ? 1 : 0, f.frozen > 0 ? 1 : 0, f.poison > 0 ? 1 : 0, r2(f.r), r2(tellOf(f)), f.face || 1, (f.stun > 0 ? 1 : 0) | (f.mark > 0 ? 2 : 0) | (f.silence > 0 ? 4 : 0) | (f.slowT > 0 ? 8 : 0) | (f.hex > 0 ? 16 : 0) | (f.gild > 0 ? 32 : 0) | (f.lunge > 0 ? 64 : 0) | (f.phaseT > 0 ? 128 : 0) | (f.heretic > 0 ? 256 : 0) | (f.bondT > 0 ? 512 : 0) | (f.rage > 0 ? 1024 : 0)]),
-    shots: room.shots.slice(-140).map(b => [b.kind, nx(b.x), ny(b.y), Math.round(b.vx), Math.round(b.vy), r2(b.r), b.col, b.el || 0, r2(b.age), r2(b.spin || 0), b.novaR != null ? r2(b.novaR) : -1, b.tx != null ? nx(b.tx) : -1, b.ty != null ? ny(b.ty) : -1, (b.trig ? 1 : 0) | (b.homing ? 2 : 0) | (b.poison ? 4 : 0), b.ov || 0, b.grow || 0, r2(b.wz || 0), ...(A_ => A_ ? [nx(A_.x), ny(A_.y)] : [-1, -1])(anchorOf(b)), r2(b.gy != null ? b.gy - b.y : 0), b.fateT > 0 ? 1 : 0, b.lv || 0, b.tolls || 0]),
+    shots: room.shots.slice(-140).map(b => [b.kind, nx(b.x), ny(b.y), Math.round(b.vx), Math.round(b.vy), r2(b.r), b.col, b.el || 0, r2(b.age), r2(b.spin || 0), b.novaR != null ? r2(b.novaR) : -1, b.tx != null ? nx(b.tx) : -1, b.ty != null ? ny(b.ty) : -1, (b.trig ? 1 : 0) | (b.homing ? 2 : 0) | (b.poison ? 4 : 0), b.ov || 0, b.grow || 0, r2(b.wz || 0), ...(A_ => A_ ? [nx(A_.x), ny(A_.y)] : [-1, -1])(anchorOf(b)), r2(b.gy != null ? b.gy - b.y : 0), b.fateT > 0 ? 1 : 0, b.lv || 0, b.tolls || 0, b.mv || 0]),
     es: room.eshots.map(b => [nx(b.x), ny(b.y), Math.round(b.vx), Math.round(b.vy), b.col || 0]),
     dr: room.drops.map(e => [nx(e.x), ny(e.y)]), wi: room.wisps.map(w => [nx(w.x), ny(w.y)]), fxs, pl,
-    lg: [(room.walls || []).map(w => [nx(w.x), ny(w.y), r2(w.r), r2(w.life), w.seed]), (room.allies || []).map(a => [nx(a.x), ny(a.y), a.face || 1, r2(Math.max(0, a.raise)), r2(a.life), r2(a.swing || 0), r2(a.walk || 0)])],
+    lg: [(room.walls || []).map(w => [nx(w.x), ny(w.y), r2(w.r), r2(w.life), w.seed]), (room.allies || []).map(a => [nx(a.x), ny(a.y), a.face || 1, r2(Math.max(0, a.raise)), r2(a.life), r2(a.swing || 0), r2(a.walk || 0), a.god ? 1 : 0])],
   };
 }
 const _cleared = roomCleared;
@@ -184,7 +184,7 @@ function applyDoor(d) {
   if (G.floor !== d.floor) { G.floor = d.floor; G.map = genMap(); bg = null; }
   G.step = d.step; G.endless = d.endless; G.path[G.step] = d.d; stepRng(d.d);
   if (d.d === 'fight' || d.d === 'elite' || d.d === 'boss') return clientStartRoom(d.d);
-  if (d.d === 'shrine') return shrine(); if (d.d === 'merchant') return merchant(); if (d.d === 'treasure') return treasure();
+  if (d.d === 'archive' && window.__mythic) return __mythic.archive(); if (d.d === 'shrine') return shrine(); if (d.d === 'merchant') return merchant(); if (d.d === 'treasure') return treasure();
 }
 const _advance = advance;
 advance = () => { if (!NET.on || NET.host) return _advance(); showMap(); };
@@ -221,7 +221,7 @@ function clientUpdate(dt) {
 function sendState(inRoom) {
   const w = wand();
   toHost({ k: 'st', inRoom, x: nx(P.x), y: ny(P.y), face: +P.face.toFixed(2), walk: +P.walk.toFixed(2), dodge: P.dodgeT > 0 ? 1 : 0, hp: Math.ceil(G.flame), maxHp: G.maxFlame, cls: G.cls, name: myName(), ready: mode === 'wait',
-    w: { name: w.name, slots: w.slots, delay: w.delay, recharge: w.recharge, maxMana: w.maxMana, regen: w.regen, hue: w.hue, leaves: w.leaves, ornate: !!w.ornate, gold: w.gold || 0 }, lb: NET.lpAck || 0 });
+    w: { name: w.name, slots: w.slots, delay: w.delay, recharge: w.recharge, maxMana: w.maxMana, regen: w.regen, hue: w.hue, leaves: w.leaves, ornate: !!w.ornate, gold: w.gold || 0, myth: w.myth ? 1 : 0 }, lb: NET.lpAck || 0 });
 }
 setInterval(() => { if (NET.on && !NET.host && G && G.coop && mode !== 'room') sendState(false); }, 500);
 function applySnap(s) {
@@ -237,13 +237,13 @@ function applySnap(s) {
   for (const [id, f] of NET.foeMap) if (!seen.has(id)) { NET.foeMap.delete(id); G.kills++; corpse(f); au('death', f); for (let i = 0; i < 14; i++) room.parts.push({ x: f.x, y: f.y, vx: (Math.random() - .5) * 220, vy: (Math.random() - .5) * 220, life: .6, c: i % 2 ? '#ff8a2a' : '#3a3428', s: 3 }); }
   room.foes = [...NET.foeMap.values()];
   const nNew = s.shots.filter(b => b[8] < .1).length; if (nNew) { const b = s.shots.find(b => b[8] < .1); au('castGuest', b[7] || '', b[0]); }
-  room.shots = s.shots.map(([kind, x, y, vx, vy, r, col, el, age, spin, novaR, tx, ty, fl, ov, grow, wz, ax, ay, gy, fate, lv, tolls]) => ({ ov, lv: lv || 0, tolls: tolls || 0, grow, wz: wz || 0, ax: ax >= 0 ? dx_(ax) : undefined, ay: ay >= 0 ? dy_(ay) : undefined, gy: gy ? dy_(y) + gy : undefined, fateT: fate ? .1 : 0, armT: CARDS[kind] && CARDS[kind].grave ? .28 : undefined, kind, x: dx_(x), y: dy_(y), vx, vy, r, col, el: el || undefined, age, spin, novaR: novaR >= 0 ? novaR : undefined, tx: tx >= 0 ? dx_(tx) : undefined, ty: ty >= 0 ? dy_(ty) : undefined, trig: fl & 1, homing: fl & 2, poison: fl & 4, hit: [] }));
+  room.shots = s.shots.map(([kind, x, y, vx, vy, r, col, el, age, spin, novaR, tx, ty, fl, ov, grow, wz, ax, ay, gy, fate, lv, tolls, mv]) => ({ ov, mv: mv || 0, lv: lv || 0, tolls: tolls || 0, grow, wz: wz || 0, ax: ax >= 0 ? dx_(ax) : undefined, ay: ay >= 0 ? dy_(ay) : undefined, gy: gy ? dy_(y) + gy : undefined, fateT: fate ? .1 : 0, armT: CARDS[kind] && CARDS[kind].grave ? .28 : undefined, kind, x: dx_(x), y: dy_(y), vx, vy, r, col, el: el || undefined, age, spin, novaR: novaR >= 0 ? novaR : undefined, tx: tx >= 0 ? dx_(tx) : undefined, ty: ty >= 0 ? dy_(ty) : undefined, trig: fl & 1, homing: fl & 2, poison: fl & 4, hit: [] }));
   room.eshots = s.es.map(([x, y, vx, vy, col]) => ({ x: dx_(x), y: dy_(y), vx, vy, col: col || undefined }));
   room.drops = s.dr.map(([x, y], i) => ({ x: dx_(x), y: dy_(y), t: i }));
   room.wisps = s.wi.map(([x, y]) => ({ x: dx_(x), y: dy_(y), life: 1 }));
   for (const f of s.fxs) room.fxs.push(Object.assign({}, f, { x: dx_(f.x), y: dy_(f.y), x2: f.x2 != null ? dx_(f.x2) : undefined, y2: f.y2 != null ? dy_(f.y2) : undefined }));
   room.done = !!s.done;
-  if (s.lg) { const k = room.scale || 1; room.walls = s.lg[0].map(([x, y, r, life, seed]) => ({ x: dx_(x), y: dy_(y), r: r * k, life, max: life + 1, seed })); room.allies = s.lg[1].map(([x, y, face, raise, life, swing, walk]) => ({ x: dx_(x), y: dy_(y), r: 11, face, raise, life, swing, walk })); }
+  if (s.lg) { const k = room.scale || 1; room.walls = s.lg[0].map(([x, y, r, life, seed]) => ({ x: dx_(x), y: dy_(y), r: r * k, life, max: life + 1, seed })); room.allies = s.lg[1].map(([x, y, face, raise, life, swing, walk, god]) => ({ x: dx_(x), y: dy_(y), r: god ? 22 : 11, face, raise, life, swing, walk, god })); }
   const others = [];
   for (const [id, x, y, face, walk, hp, maxHp, down, castT, hue, leaves, cls, rev, em, sigs, shield, orn, lpb] of s.pl) {
     const pl = NET.players.find(p => p.id === id) || { name: 'Mage', slot: 0 };
