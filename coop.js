@@ -248,7 +248,7 @@ function applySnap(s) {
 function clientClear(d) {
   const me = d.hp[NET.id]; if (me) { G.flame = me.hp; G.embersRun = NET.em0 + me.em; }
   P.down = false; room = null; HUD.classList.add('hidden');
-  if (d.kind === 'boss') bossDown(); else reward(d.kind === 'elite' ? 'Elite slain — claim a reward' : 'Claim a reward', d.kind === 'elite' ? .6 : .25);
+  if (d.kind === 'boss') bossDown(); else reward(d.kind === 'elite' ? 'Elite slain — claim a reward' : 'Claim a reward', d.kind === 'elite' ? .6 : .25, d.kind === 'elite' ? { leg: .05, orn: .2 } : null);
 }
 // guest skill goes to the host; dodge stays local
 const _skill = skill;

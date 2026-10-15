@@ -116,7 +116,7 @@ function drawBrazier(x, y, t) {
 }
 const BRAZ = [['#a8401a', '#ff8a2a', '#ffc860', '#fff0b0'], ['#c8401a', '#ff7a1a', '#ffb347', '#fff0b0'], ['#2a4ac8', '#5a8aff', '#a8d0ff', '#f0f8ff'], ['#5a1a9a', '#a04aff', '#d8a0ff', '#fff0ff']];
 // floating grimoire: dark tooled leather, metal corners, clasp, embossed leaf crest
-function drawGrimoire(x, y, cover, leaves, t, open) {
+function drawGrimoire(x, y, cover, leaves, t, open, ornate) {
   const bob = Math.sin(t * 2.6) * 2;
   cx.save(); cx.translate(x, y + bob); cx.rotate(Math.sin(t * 1.7) * .06);
   cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(0, 24 - bob, 8, 2.5, 0, 0, TAU); cx.fill();
@@ -135,6 +135,11 @@ function drawGrimoire(x, y, cover, leaves, t, open) {
     cx.fillStyle = '#b8954a'; for (const [a, b] of [[-10, -12], [5, -12], [-10, 9], [5, 9]]) { cx.fillRect(a, b, 3, 3); }
     cx.fillRect(8, -2, 2.5, 4); // clasp
     leafCrest(cx, .5, 0, 4.6, clamp(leaves, 1, 5), '#d8b45a');
+    if (ornate) { // gilded reliquary cover: gold filigree, corner caps, crimson gem
+      cx.strokeStyle = '#e8c060'; cx.lineWidth = 1; cx.strokeRect(-8.5, -10.5, 15.5, 21); cx.beginPath(); cx.moveTo(-.5, -10.5); cx.lineTo(-.5, -7); cx.moveTo(-.5, 10.5); cx.lineTo(-.5, 7); cx.stroke();
+      cx.fillStyle = '#e8c060'; for (const [a, b] of [[-11, -13], [6, -13], [-11, 9], [6, 9]]) { cx.beginPath(); cx.moveTo(a, b); cx.lineTo(a + 4, b); cx.lineTo(a + (a < 0 ? 0 : 4), b + 4); cx.closePath(); cx.fill(); }
+      cx.fillStyle = '#b0102a'; cx.beginPath(); cx.moveTo(-.5, 5.5); cx.lineTo(2, 8); cx.lineTo(-.5, 10.5); cx.lineTo(-3, 8); cx.closePath(); cx.fill(); cx.fillStyle = '#ffd0d8'; cx.fillRect(-1, 7, 1, 1);
+    }
     cx.fillStyle = 'rgba(255,240,190,.35)'; cx.fillRect(-.5, -.5, 2, 2);
   }
   cx.restore();
@@ -185,7 +190,7 @@ function drawPilgrim(x, y, t, cls, alpha = 1) {
   cx.restore();
   // floating grimoire
   const w = MAGE_OV ? MAGE_OV : G && G.wands ? wand() : null;
-  drawGrimoire(x + sd * 24, y - 44, w ? `hsl(${w.hue},45%,${lumi ? 24 : 22}%)` : (lumi ? '#1e2a4a' : '#4a1612'), w ? (MAGE_OV ? MAGE_OV.leaves : leavesOf(w)) : (lumi ? 3 : 1), t, Q.castT > 0);
+  drawGrimoire(x + sd * 24, y - 44, w ? `hsl(${w.hue},45%,${lumi ? 24 : 22}%)` : (lumi ? '#1e2a4a' : '#4a1612'), w ? (MAGE_OV ? MAGE_OV.leaves : leavesOf(w)) : (lumi ? 3 : 1), t, Q.castT > 0, !!(w && (MAGE_OV ? MAGE_OV.orn : w.ornate)));
 }
 const FSKIN = [ // grounded, desaturated per-biome skins
   { a: '#4a5a3a', d: '#2e3a24', bone: '#b8b095', eye: '#c8ff5a', wing: '#2e3a28', robe: '#2a3a24', robeD: '#18241a', flame: '#9aff5a' },

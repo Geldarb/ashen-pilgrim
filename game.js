@@ -258,6 +258,7 @@ function drawShape(b, C, r, a) {
 }
 // glyph overlays: each new glyph leaves its own mark on the spell it powers
 function drawOverlays(b, r, a) {
+  if (b.lv) lgOverlays(b, r, a);
   const o = b.ov || 0; if (!o) return; const sp = b.spin;
   if (o & 1) { cx.globalAlpha *= .35; cx.strokeStyle = b.col || '#fff'; cx.lineWidth = 1; cx.beginPath(); cx.arc(-Math.cos(a) * 9, -Math.sin(a) * 9, r + 1, 0, TAU); cx.stroke(); cx.globalAlpha /= .35; }
   if (o & 2) { cx.strokeStyle = '#b06aff'; cx.lineWidth = .9; cx.beginPath(); for (let i = 0; i <= 3; i++) { const q = sp * .6 + i * TAU / 3; cx.lineTo(Math.cos(q) * (r + 5), Math.sin(q) * (r + 5)); } cx.stroke(); }
@@ -317,17 +318,18 @@ function depthOf() { return G.floor - ENDLESS_START + 1; }
 function leavesOf(w) { return clamp(w.leaves || Math.ceil(w.slots.length / 2), 1, 5); }
 function difficulty() { return 1 + G.floor * 0.5 + G.step * 0.1 + Math.max(0, G.floor - 3) * 0.15; }
 const CARD_POOL = Object.keys(CARDS).filter(k => !['bloodwax', 'copy', 'inverted'].includes(k) && !CARDS[k].hidden);
-const RAR_NAME = ['', 'common', 'uncommon', 'rare'];
+const RAR_NAME = ['', 'common', 'uncommon', 'rare', 'legendary'];
 const RARE_POOL = ['copy', 'inverted'];
 const TYPE_NAME = { proj: 'Attack Page', mod: 'Glyph Page', multi: 'Chant Page', trig: 'Trigger Page', curse: 'Forbidden Page', rare: 'Rare Page', sigil: 'Sigil Page' };
 
 function makeWand(o) { return Object.assign({ name: 'Wand', slots: [], delay: .25, recharge: .5, maxMana: 100, mana: 100, regen: 30, idx: 0, cd: 0, hue: 30 }, o); }
 const WAND_NAMES = ['Gale Codex', 'Ember Tome', 'Tidebound Grimoire', 'Storm Ledger', 'Umbral Folio', 'Dawn Psalter', 'Stoneleaf Book', 'Starlit Almanac'];
-function randomWand(tier) {
-  const n = clamp(Math.round(2 + rnd(2, 4) + tier * 0.5), 2, 8);
+function randomWand(tier, ornate) {
+  const n = clamp(Math.round(2 + rnd(2, 4) + tier * 0.5) + (ornate ? 1 : 0), ornate ? 4 : 2, 8);
   const w = makeWand({ name: pick(WAND_NAMES), slots: Array(n).fill(null), delay: +rnd(.08, .35).toFixed(2), recharge: +rnd(.2, .9).toFixed(2), maxMana: Math.round(rnd(80, 220)), regen: Math.round(rnd(25, 70)), hue: Math.round(rnd(360)) });
   w.mana = w.maxMana; w.leaves = clamp(Math.ceil(n / 2) + (rng() < .2 ? 1 : 0), 1, 5); w.name = ['One', 'Two', 'Three', 'Four', 'Five'][w.leaves - 1] + '-Leaf ' + w.name;
   w.slots[0] = pick(['spark', 'burst', 'ice', 'spark', 'missile', 'bubble']); if (rng() < .5) w.slots[1] = pick(['double', 'speed', 'homing', 'spark', 'wave']);
+  if (ornate) lgOrnate(w);
   return w;
 }
 function starter(cls) {
@@ -339,17 +341,23 @@ function starter(cls) {
 // Slots read left→right (or right→left if Inverted is anywhere in the wand). Modifiers attach to the next projectile;
 // multicasts draw the next N spells into one cast; triggers are a spark whose payload is the next spell drawn.
 function buildCast(wand) {
-  let deck = wand.slots.filter(id => id && CARDS[id].t !== 'sigil'); const chants = [];
+  let deck = wand.slots.filter((id, i) => id && CARDS[id].t !== 'sigil' && (!CARDS[id].leg || lgGold(wand, i))); const chants = []; // legendaries only work from gold slots
+  let carry = wand._echo || null, martyr = false;
   if (deck.includes('inverted')) deck = deck.filter(id => id !== 'inverted').reverse();
   if (!deck.some(id => CARDS[id].t === 'proj' || CARDS[id].t === 'trig')) return null;
   let p = wand.idx >= deck.length ? 0 : wand.idx, drawn = 0, wrapped = false, mana = 0, delay = 0, flame = 0;
-  const next = () => { if (drawn >= deck.length) return null; if (p >= deck.length) { p = 0; wrapped = true; } const id = deck[p++]; drawn++; const c = CARDS[id]; mana += c.mana || 0; delay += c.delay || 0; if (id === 'bloodwax') flame += 3; return id; };
+  const next = () => { if (drawn >= deck.length) return null; if (p >= deck.length) { p = 0; wrapped = true; } const id = deck[p++]; drawn++; const c = CARDS[id]; mana += c.mana || 0; delay += c.delay || 0; if (id === 'bloodwax') flame += 3; if (c.flame) flame += c.flame; if (id === 'martyrdom') martyr = true; return id; };
   function one(mods) {
     for (; ;) {
       const id = next(); if (!id) return [];
       const c = CARDS[id];
       if (c.t === 'mod' || c.t === 'curse') { if (id !== 'addmana') mods.push(id); continue; }
-      if (c.t === 'proj') return [{ p: id, mods, off: 0 }];
+      if (c.t === 'proj') { // Grimoire Echo: the next attack page inherits the echoing spell's glyphs and effects
+        let ef = null; if (carry) { mods = mods.concat(carry.mods); ef = carry.p; carry = null; }
+        const sp = { p: id, mods, off: 0 }; if (ef) sp.echoFrom = ef;
+        if (mods.includes('grimoireecho')) carry = { mods: mods.filter(q => q !== 'grimoireecho'), p: id };
+        return [sp];
+      }
       if (c.t === 'trig') return [{ p: c.carrier || 'spark', mods, off: 0, trig: c.trig, tcard: id, tdelay: c.tdelay, twin: c.twin, payload: one([]) }];
       if (c.t === 'rare') { const copies = deck.filter(d => CARDS[d].t === 'proj').map(d => ({ p: d, mods: [], off: 0, copy: true })); copies.forEach(s => mana += Math.round(CARDS[s.p].mana / 2)); return copies.concat(one(mods)); }
       if (c.t === 'multi') {
@@ -368,7 +376,8 @@ function buildCast(wand) {
   }
   const shots = one([]);
   if (p >= deck.length) { p = 0; wrapped = true; }
-  return { shots, mana, delay, flame, wrapped, nextIdx: p, chants };
+  if (martyr) { flame += Math.max(1, Math.ceil(mana / 6)); mana = 0; } // Martyrdom: the whole cast is paid in flame
+  return { shots, mana, delay, flame, wrapped, nextIdx: p, chants, echoCarry: carry };
 }
 function describeCast(wand) {
   const c = buildCast(Object.assign({}, wand, { idx: 0 })); if (!c) return 'No attack page — this grimoire casts nothing.';
@@ -379,7 +388,8 @@ function describeCast(wand) {
 function tryCast(world, wand, x, y, ang, payFlame) {
   const c = buildCast(wand); if (!c || !c.shots.length) return false;
   if (c.mana > wand.mana) { wand.cd = 0.15; return false; }
-  wand.mana -= c.mana; wand.idx = c.nextIdx;
+  if (!lgPreCast(world, wand, c)) return false;
+  wand.mana -= c.mana; wand.idx = c.nextIdx; wand._echo = c.echoCarry || null;
   if (c.flame && payFlame) payFlame(c.flame);
   wand.cd = Math.max(0.06, (wand.delay + c.delay) * (1 - .15 * sigN(wand, 'quick')) + (c.wrapped ? wand.recharge * (1 - .15 * sigN(wand, 'quick')) : 0));
   world.curWand = wand;
@@ -393,6 +403,7 @@ function tryCast(world, wand, x, y, ang, payFlame) {
     }
   }
   world.ocMul = 0; au('cast', c, world); if (world === room && world.caster === P) buzz(6, 'cast');
+  lgPostCast(world, wand, c, x, y);
   for (const id of c.chants) { const C = CARDS[id]; world.fxs.push({ type: 'chant', x, y: y + 14, r: 14 + C.n * 2, n: C.n, life: .35, c: C.rand ? '#d8b0ff' : C.stagger ? '#ffd890' : C.circle ? '#ffb070' : '#e8d8a8' }); }
   return true;
 }
@@ -416,6 +427,7 @@ function spawnShot(world, spec, x, y, ang) {
   if (b.nova) { s.x = caster.x; s.y = caster.y - 10; s.vx = s.vy = 0; s.novaR = 4; s.novaMax = b.nova * (r / b.r); s.pierce = 999; }
   if (b.guard || m('orbit')) { s.orbit = { c: caster, a: ang, rad: b.guard ? 42 : 48 + fx() * 6 }; }
   pg2Spawn(world, s, spec, b, m, ang);
+  lgSpawn(world, s, spec, b, m, ang);
   if (world.shots.length < 220) world.shots.push(s); // hard cap on live spells (perf)
   return s;
 }
@@ -435,9 +447,9 @@ function onHit(world, s, f) {
   if (s.shatter && f.frozen > 0) { dmg *= 2.5; f.frozen = 0; world.fxs.push({ type: 'frostring', x: f.x, y: f.y, r: f.r + 12, life: .25, c: '#dff4ff' }); }
   if (s.crown && fx() < .25) { dmg *= 2.5; world.fxs.push({ type: 'ring', x: f.x, y: f.y - f.r, r: 4, R: f.r + 14, life: .25, c: '#ffd860' }); }
   if (s.critburn && f.burn > 0) world.fxs.push({ type: 'sfx', x: f.x, y: f.y - f.r * 2.2, txt: 'CRIT!', col: '#ff5a1a', size: 14, life: .6, rot: -.2 });
-  dmg *= pg2HitMul(world, s, f);
+  dmg *= pg2HitMul(world, s, f) * lgHitMul(world, s, f);
   const k = s.knock ? .9 : .12, killed = hurtFoe(world, f, dmg, s.vx * k, s.vy * k);
-  pg2AfterHit(world, s, f, killed, dmg);
+  pg2AfterHit(world, s, f, killed, dmg); lgAfterHit(world, s, f, killed, dmg);
   if (s.lifesteal && world.onHeal) world.onHeal(dmg * .15);
   if (s.freeze) f.frozen = 1.6; if (s.burn) f.burn = Math.max(f.burn, 2.2); if (s.poison) f.poison = 3; if (s.hex) f.hex = 3;
   if (s.siphon && s.wand) s.wand.mana = Math.min(mmax(s.wand), s.wand.mana + 4);
@@ -452,11 +464,12 @@ function onHit(world, s, f) {
 }
 function updateShots(world, dt) {
   const A = world.bounds;
+  lgWorld(world, dt);
   if (world.pending && world.pending.length) { const kc = world.caster, kw = world.curWand; for (const q of world.pending) { q.t -= dt; if (q.t <= 0) { world.caster = q.caster || kc; world.curWand = q.wand; world.ocMul = q.mul || 0; const n = q.burst || 1; for (let k = 0; k < n; k++) spawnShot(world, q.s, q.x, q.y, q.ang + k * TAU / n); world.ocMul = 0; } } world.caster = kc; world.curWand = kw; world.pending = world.pending.filter(q => q.t > 0); }
   for (const s of world.shots) {
     s.age += dt; s.life -= dt; s.spin += dt * 14;
     if (s.rehit && (s.rht -= dt) <= 0) { s.rht = s.rehit; s.hit.length = 0; }
-    if (pg2Tick(world, s, dt)) continue;
+    if (pg2Tick(world, s, dt) || lgTick(world, s, dt)) continue;
     if (s.orbit) { const o = s.orbit; if (o.swing) o.a = o.a0 + Math.sin(s.age * 4.2) * 1.7; else o.a += dt * (s.kind === 'wisp' ? 3.5 : 5); const nx = o.c.x + Math.cos(o.a) * o.rad, ny = o.c.y - 12 + Math.sin(o.a) * o.rad; s.vx = (nx - s.x) / Math.max(dt, 1e-3); s.vy = (ny - s.y) / Math.max(dt, 1e-3); s.x = nx; s.y = ny; }
     else if (s.novaR !== undefined) { s.novaR = Math.min(s.novaMax, s.novaR + dt * 320); }
     else {
@@ -488,7 +501,7 @@ function updateShots(world, dt) {
       s.hit.push(f); onHit(world, s, f);
     }
     if (s.life <= 0) {
-      pg2End(world, s);
+      pg2End(world, s); lgEnd(world, s);
       if (s.trig === 'hit' || s.trig === 'expiry') releasePayload(world, s);
       if (CARDS[s.kind].expBoom) { explode(world, s.x, s.y, CARDS[s.kind].expBoom, s.dmg); world.fxs.push({ type: 'quake', x: s.x, y: s.y, r: CARDS[s.kind].expBoom, life: .35, c: '#c89a5a' }); }
       if (s.echo && world.shots.length < 200) { const kw = world.curWand; world.curWand = s.wand; const e = spawnShot(world, Object.assign({}, s.spec, { noecho: true, trig: null, payload: null }), s.x, s.y, Math.atan2(s.vy, s.vx) || s.ang); e.dmg = s.dmg * .5; e.ov |= 1; world.curWand = kw; }
@@ -506,7 +519,7 @@ function tickStatus(world, f, dt) {
   if (f.burn > 0) { f.burn -= dt; hurtTick(world, f, 6 * dt); if (fx() < .3) world.parts.push({ x: f.x + (fx() - .5) * f.r, y: f.y - f.r * .5, vx: 0, vy: -40, life: .4, c: '#ff7a1a', s: 2, ember: true }); }
   if (f.poison > 0) { f.poison -= dt; hurtTick(world, f, 5 * dt); }
   if (f.hex > 0) f.hex -= dt;
-  pg2Status(f, dt);
+  pg2Status(f, dt); lgStatus(world, f, dt);
 }
 function hurtTick(world, f, d) { f.hp -= d; f.dmgTaken = (f.dmgTaken || 0) + d; if (world.onDmg) world.onDmg(f, d); if (f.hp <= 0 && !f.dead) { if (f.dummy) f.hp = f.max; else killFoe(world, f); } }
 function hurtFoe(world, f, dmg, kx = 0, ky = 0) {
@@ -577,9 +590,9 @@ function panel(html, cls = '') { stopPreview(); UI.innerHTML = '<div class="pane
 function closeUI() { stopPreview(); UI.innerHTML = ''; }
 function on(id, f) { const e = document.getElementById(id); if (e) e.onclick = f; }
 const SHORT = { critburn: 'Crit on Burn', smallfast: 'Small+Fast', trigger: 'Trigger Bolt', behind: 'Behind+Fwd', blackhole: 'Black Hole', sickle: 'Sickle', bolt: 'Lightning', missile: 'Missile', chain: 'Chain Ltng', burst: 'Bounce Burst', skull: 'Grave Skull', explode: 'Explode', freeze: 'Freeze', wisp: 'Wisp', deathtrig: 'Death Trig', expiry: 'Expiry Trig', lifesteal: 'Lifesteal', knock: 'Knockback' };
-const cardChip = (id, extra = '') => id ? `<div class="chip t-${CARDS[id].t}" data-card="${id}" title="${CARDS[id].name}" ${extra}><i>${CARDS[id].icon}</i><u>${SHORT[id] || CARDS[id].name}</u></div>` : '';
-function cardRow(id, attrs = '', label) { const c = CARDS[id]; return `<button class="card t-${c.t}" ${attrs}><span class="ic">${c.icon}</span><div><b>${label || c.name}</b><span><em>${TYPE_NAME[c.t]}</em>${(c.rar || 1) > 1 ? ' · ' + RAR_NAME[c.rar] : ''} · ${c.mana ? c.mana + ' mana · ' : ''}${c.desc}</span></div></button>`; }
-function wandRow(w, attrs = '', label) { return `<button class="card t-wand" ${attrs}><span class="ic">📖</span><div><b>${label || w.name}</b><span>${w.slots.length} slots · delay ${w.delay}s · recharge ${w.recharge}s · mana ${w.maxMana} (+${w.regen}/s)${w.slots.some(Boolean) ? ' · holds ' + w.slots.filter(Boolean).map(i => CARDS[i].name).join(', ') : ''}</span></div></button>`; }
+const cardChip = (id, extra = '') => id ? `<div class="chip t-${CARDS[id].t}${CARDS[id].leg ? ' leg' : ''}" data-card="${id}" title="${CARDS[id].name}" ${extra}><i>${CARDS[id].icon}</i><u>${SHORT[id] || CARDS[id].name}</u></div>` : '';
+function cardRow(id, attrs = '', label) { const c = CARDS[id]; return `<button class="card t-${c.t}${c.leg ? ' leg' : ''}" ${attrs}><span class="ic">${c.icon}</span><div><b>${label || c.name}</b><span><em>${c.leg ? 'Legendary ' : ''}${TYPE_NAME[c.t]}</em>${(c.rar || 1) > 1 && !c.leg ? ' · ' + RAR_NAME[c.rar] : ''} · ${c.mana ? c.mana + ' mana · ' : ''}${c.desc}${c.flav ? '<i class="flav">“' + c.flav + '”</i>' : ''}</span></div></button>`; }
+function wandRow(w, attrs = '', label) { return `<button class="card t-wand${w.ornate ? ' ornate' : ''}" ${attrs}><span class="ic">${w.ornate ? ORNATE_SVG : '📖'}</span><div><b>${label || w.name}</b><span>${w.ornate ? '<em class="goldtxt">Rare ornate grimoire · 2 gold slots for Legendary pages</em> · ' : ''}${w.slots.length} slots · delay ${w.delay}s · recharge ${w.recharge}s · mana ${w.maxMana} (+${w.regen}/s)${w.slots.some(Boolean) ? ' · holds ' + w.slots.filter(Boolean).map(i => CARDS[i].name).join(', ') : ''}</span></div></button>`; }
 
 function showCamp() {
   mode = 'camp'; HUD.classList.add('hidden'); G = null; bg = null;
@@ -631,7 +644,8 @@ function bossDown() {
   if (G.floor === 3) return victory();
   const d = G.floor >= ENDLESS_START ? depthOf() : 0;
   if (d) { camp.bestDepth = Math.max(camp.bestDepth || 0, d); saveCamp(); }
-  reward(d ? 'Depth ' + d + ' cleared! Claim a reward' : biome().boss + ' defeated! Claim a reward', .6);
+  const ms = d && d % 5 === 0; // Endless milestone every 5 depths: a guaranteed Legendary page
+  reward(ms ? '♛ Depth ' + d + ' milestone! A Legendary page awaits' : d ? 'Depth ' + d + ' cleared! Claim a reward' : biome().boss + ' defeated! Claim a reward', .6, { leg: ms ? 1 : .7, orn: .35 });
 }
 function victory() {
   mode = 'win'; HUD.classList.add('hidden');
@@ -650,17 +664,19 @@ function victory() {
 function rollPage() { for (let k = 0; k < 6; k++) { const id = pick(CARD_POOL), r = CARDS[id].rar || 1; if (r === 1 || (r === 2 && rng() < .55) || (r === 3 && rng() < .25)) return id; } return pick(CARD_POOL); }
 function cardChoices(n, cursed) { const out = []; while (out.length < n) { const id = cursed && rng() < .25 ? 'bloodwax' : rng() < (cursed ? .1 : .04) ? pick(RARE_POOL) : rollPage(); if (!out.includes(id)) out.push(id); } return out; }
 function bagAdd(id) { const i = G.bag.indexOf(null); if (i >= 0) { G.bag[i] = id; return true; } return false; }
-function reward(title, wandChance) {
+function reward(title, wandChance, lg) {
   mode = 'pick'; HUD.classList.add('hidden');
   const opts = cardChoices(3, G.curses.length > 0).map(id => ({ card: id }));
-  if (rng() < wandChance) opts[2] = { wand: randomWand(G.step + G.curses.length) };
+  if (lg && rng() < (lg.leg || 0)) opts[0] = { card: lgRoll() };
+  if (rng() < wandChance) opts[2] = { wand: randomWand(G.step + G.curses.length, !!(lg && rng() < (lg.orn || 0))) };
   const full = !G.bag.includes(null);
   panel(`<h2>${title}</h2><p class="small">Choose one${full ? ' · satchel full: a page will replace slot 8' : ''}</p><div class="cards">${opts.map((o, i) => o.card ? cardRow(o.card, `id="rw${i}" data-reward="card"`) : wandRow(o.wand, `id="rw${i}" data-reward="wand"`, 'New grimoire: ' + o.wand.name)).join('')}</div><button class="btn sub" id="skip">Skip</button>`);
   opts.forEach((o, i) => on('rw' + i, () => {
-    if (o.card) { if (!bagAdd(o.card)) G.bag[7] = o.card; toast(CARDS[o.card].icon + ' ' + CARDS[o.card].name + ' added to your satchel'); advance(); }
+    if (o.card) { if (!bagAdd(o.card)) G.bag[7] = o.card; toast(CARDS[o.card].icon + ' ' + CARDS[o.card].name + ' added to your satchel'); if (CARDS[o.card].leg) lgReveal(true); advance(); }
     else takeWand(o.wand, advance);
   }));
   on('skip', advance);
+  lgRevealPanel();
 }
 function takeWand(w, then) {
   if (G.wands.length < 2) { G.wands.push(w); toast('📖 ' + w.name + ' — swap with ⇄ / Q'); return then(); }
@@ -669,6 +685,7 @@ function takeWand(w, then) {
   on('keep', then);
 }
 function shrine() {
+  if (lgAltar()) return;
   mode = 'pick'; const heal = Math.round(G.maxFlame * 0.35);
   panel(`<h2>⛩ Ancient Altar</h2><p>A glowing sigil-stone hums with old magic. You can rebind your grimoire here.</p>
   <button class="btn sub" id="edit">📖 Edit grimoire</button>
@@ -681,7 +698,7 @@ function shrine() {
 function merchant() {
   mode = 'pick';
   const ch = cardChoices(4, true), prices = ch.map(id => Math.round((CARDS[id].t === 'proj' ? 16 : 12) + rnd(0, 10)));
-  let wnd = randomWand(G.step + 1); const wp = 35;
+  const orn = rng() < .05; let wnd = randomWand(G.step + 1, orn); const wp = orn ? 60 : 35; // very rarely an ornate grimoire
   const draw = () => {
     panel(`<h2>⚖ Wandering Peddler</h2><p>"Pages for a bit of your life force, young mage! Fair trade, heh."</p><p class="stat">HP ${Math.ceil(G.flame)}/${G.maxFlame} · Satchel ${G.bag.filter(Boolean).length}/8</p><div class="cards">${ch.map((id, i) => id ? cardRow(id, `id="buy${i}" ${G.flame <= prices[i] || !G.bag.includes(null) ? 'disabled' : ''}`, CARDS[id].name + ' — ' + prices[i] + ' HP') : '').join('')}
     ${wnd ? wandRow(wnd, `id="buyW" ${G.flame <= wp ? 'disabled' : ''}`, wnd.name + ' — ' + wp + ' HP') : ''}</div><button class="btn sub" id="edit">📖 Edit grimoire</button><button class="btn" id="leave">Leave</button>`);
@@ -690,7 +707,7 @@ function merchant() {
     on('edit', () => editor(draw));
     on('leave', advance);
   };
-  draw();
+  draw(); if (orn) lgReveal();
 }
 function treasure() {
   mode = 'pick';
@@ -724,13 +741,14 @@ function editor(back) {
   panel(`<h2>📖 Grimoire</h2>
   ${G.wands.length > 1 ? `<div class="tabs">${G.wands.map((x, i) => `<button class="tab ${i === edWand ? 'on' : ''}" id="wt${i}">${x.name}</button>`).join('')}</div>` : `<p class="small">${w.name}</p>`}
   <p class="small">delay ${w.delay}s · recharge ${w.recharge}s · mana ${mmax(w)} (+${Math.round(mreg(w))}/s) · ${w.slots.length} slots</p>
-  <div class="slots wand" id="wslots">${w.slots.map((id, i) => `<div class="slot" data-loc="w:${i}">${cardChip(id)}</div>`).join('')}</div>
+  <div class="slots wand${w.ornate ? ' ornate' : ''}" id="wslots">${w.slots.map((id, i) => `<div class="slot${lgGold(w, i) ? ' gold' : ''}" data-loc="w:${i}">${cardChip(id)}</div>`).join('')}</div>
+  <p class="small goldnote">♛ Gold slot${lgGoldN(w) > 1 ? 's hold' : ' holds'} Legendary pages — this ${w.ornate ? 'ornate grimoire holds 2' : 'grimoire holds 1'}${w.ornate ? '' : ' (rare ornate grimoires hold 2)'}.</p>
   <canvas id="pv" width="300" height="120"></canvas>
   <p class="cast" id="castDesc">${describeCast(w)}</p>
   <p class="small">Satchel</p>
   <div class="slots bag" id="bslots">${G.bag.map((id, i) => `<div class="slot" data-loc="b:${i}">${cardChip(id)}</div>`).join('')}</div>
   <p class="info" id="info">Drag pages between your satchel and grimoire (or tap one, then a slot). Read left→right: glyphs power up the next attack; chants cast the next N pages together; sigils are passive and never cast.</p>
-  <div class="legend"><span class="t-proj">Attack</span><span class="t-mod">Glyph</span><span class="t-multi">Chant</span><span class="t-trig">Trigger</span><span class="t-curse">Forbidden</span><span class="t-rare">Rare</span><span class="t-sigil">Sigil</span></div>
+  <div class="legend"><span class="t-proj">Attack</span><span class="t-mod">Glyph</span><span class="t-multi">Chant</span><span class="t-trig">Trigger</span><span class="t-curse">Forbidden</span><span class="t-rare">Rare</span><span class="t-sigil">Sigil</span><span class="t-leg">Legendary</span></div>
   <button class="btn" id="done">Done</button>`, 'wide');
   G.wands.forEach((x, i) => on('wt' + i, () => { edWand = i; edSel = null; editor(); }));
   on('done', () => { saveRun(); const b = edBack; edBack = null; edSel = null; b(); });
@@ -739,7 +757,7 @@ function editor(back) {
 }
 function getLoc(loc) { const [k, i] = loc.split(':'); return k === 'w' ? G.wands[edWand].slots[+i] : G.bag[+i]; }
 function setLoc(loc, v) { const [k, i] = loc.split(':'); if (k === 'w') { G.wands[edWand].slots[+i] = v; G.wands[edWand].idx = 0; } else G.bag[+i] = v; }
-function moveCard(from, to) { if (from === to) return; au('slot'); const a = getLoc(from), b = getLoc(to); setLoc(to, a); setLoc(from, b); editor(); }
+function moveCard(from, to) { if (from === to) return; const bad = lgCheckMove(from, to); if (bad) return lgReject(to, bad); au('slot'); const a = getLoc(from), b = getLoc(to); setLoc(to, a); setLoc(from, b); editor(); }
 let drag = null;
 function setupDrag() {
   UI.querySelectorAll('.slot').forEach(sl => {
@@ -830,9 +848,9 @@ function spawn(type, x, y, tier, elite) {
 }
 function corpse(f) { if (!room) return; const c = room.corpses || (room.corpses = []); room.corpseN = (room.corpseN || 0) + 1; c.push({ type: f.type, x: f.x, y: f.y, r: f.r, elite: f.elite, boss: f.boss, face: f.face || 1, phase: f.phase, t0: performance.now(), dur: f.boss ? 2.2 : .8, id: f.id }); if (c.length > 24) c.shift(); }
 function killFoe(world, f) {
-  f.dead = true; pg2Death(world, f); if (world !== room) return; G.kills++; au('death', f); corpse(f);
+  f.dead = true; pg2Death(world, f); lgDeath(world, f); if (world !== room) return; G.kills++; au('death', f); corpse(f);
   if (f.boss) { impact(.2); shake = 14; sfx(f.x, f.y - 60, 'KA-BOOM!!', '#ffe14a', 30); room.eshots.length = 0; for (const o of room.foes) if (!o.dead && o !== f) killFoe(world, o); } else if (f.elite || fx() < .25) sfx(f.x, f.y - f.r * 2, pick(['SLASH!', 'WHAM!', 'POW!', 'KRAK!']), '#ffffff', f.elite ? 22 : 14);
-  const n = Math.max(1, Math.round(f.ember * (1 + .5 * G.curses.length) / 2)) + (f.gild > 0 ? 3 : 0);
+  const n = f.skelKill ? 0 : Math.max(1, Math.round(f.ember * (1 + .5 * G.curses.length) / 2)) + (f.gild > 0 ? 3 : 0); // Ossuary Legion: bones keep the embers
   for (let i = 0; i < n; i++) room.drops.push({ x: f.x + (fx() - .5) * 20, y: f.y + (fx() - .5) * 20, vx: (fx() - .5) * 120, vy: (fx() - .5) * 120, t: 0 });
   for (let i = 0; i < 14; i++) room.parts.push({ x: f.x, y: f.y, vx: (fx() - .5) * 220, vy: (fx() - .5) * 220, life: .6, c: i % 2 ? '#ff8a2a' : '#3a3428', s: 3 });
 }
@@ -871,7 +889,7 @@ function hurtTarget(T, d) { if (T === P) hurtPlayer(d); }
 function collectDrop(T) { G.embersRun += 1; G.flame = Math.min(G.maxFlame, G.flame + 1.2); }
 function onZeroHp() { mode = 'dying'; setTimeout(() => die(false), 600); }
 function extraEnts() { return []; }
-function roomCleared(k) { room = null; HUD.classList.add('hidden'); if (k === 'boss') bossDown(); else reward(k === 'elite' ? 'Elite slain — claim a reward' : 'Claim a reward', k === 'elite' ? .6 : .25); }
+function roomCleared(k) { room = null; HUD.classList.add('hidden'); if (k === 'boss') bossDown(); else reward(k === 'elite' ? 'Elite slain — claim a reward' : 'Claim a reward', k === 'elite' ? .6 : .25, k === 'elite' ? { leg: .05, orn: .2 } : null); }
 function update(dt) {
   if (mode !== 'room' && mode !== 'dying') return;
   if (paused) return;
@@ -1027,7 +1045,7 @@ function drawShots(wd) {
         case 'Poison': if (fx() < .25) wd.parts.push({ x, y, vx: (fx() - .5) * 12, vy: 10, life: .35, c: '#6ad02a', s: 2 }); break;
       }
     }
-    if (b.ov) drawOverlays(b, r, a);
+    if (b.ov || b.lv) drawOverlays(b, r, a);
     if (b.trig) { cx.strokeStyle = '#4fd46a'; cx.lineWidth = 1.5; cx.setLineDash([2, 2]); cx.beginPath(); cx.arc(0, 0, r + 4, 0, TAU); cx.stroke(); cx.setLineDash([]); }
     if (b.homing && b.kind !== 'missile') { cx.strokeStyle = '#4a9aff'; cx.lineWidth = 1; cx.beginPath(); cx.arc(0, 0, r + 6, b.spin, b.spin + 2); cx.stroke(); }
     if (b.poison && b.kind !== 'acid') { cx.fillStyle = '#8aff4a'; cx.fillRect(-r - 2, -1, 2, 2); }

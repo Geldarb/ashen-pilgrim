@@ -138,6 +138,8 @@ const AUD = (() => {
   addEventListener('click', e => { if (e.target.closest && e.target.closest('button, .card, .tab')) play('click'); }, true);
   return {
     play, unlock, apply,
+    reg(fn, th) { Object.assign(FX, fn({ tone, noise, bell, panOf })); Object.assign(TH, th || {}); },
+    fx: FX,
     suspend() { if (ctx && ctx.state === 'running') ctx.suspend(); },
     resume() { if (ctx && ctx.state === 'suspended') ctx.resume(); },
     state: () => ({ ctx: ctx ? ctx.state : 'none', voices, peakVoices, played, dropped, track: trackId, maxVoices: MAXV }),

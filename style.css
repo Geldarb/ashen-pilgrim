@@ -109,3 +109,30 @@ html,body{overscroll-behavior:none;-webkit-touch-callout:none;-webkit-text-size-
 .srow{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:15px}.srow span{width:70px;text-align:left}.srow b{width:34px;text-align:right;color:#ffcf85}
 .srow input{flex:1;height:44px;accent-color:#e0a040;touch-action:manipulation}
 .btn.tog{text-align:left}.btn.tog.on b{color:#9aff7a}
+/* ---------- Legendary rarity (gold + crimson) ---------- */
+.t-leg{--c:#e8c060}
+.legend span.t-leg{color:#e8c060}
+b.t-leg{color:#e8c060}
+@keyframes lgborder{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+.chip.leg{border:2px solid transparent;color:#fff6d8;background:linear-gradient(160deg,#3a0810,#120a06 55%,#2a1806) padding-box,linear-gradient(90deg,#e8c060,#b0102a,#ffe8a0,#b0102a,#e8c060) border-box;background-size:100% 100%,200% 100%;animation:lgborder 2.4s linear infinite;box-shadow:0 0 8px rgba(232,192,96,.45),inset 0 0 6px rgba(176,16,42,.5)}
+.chip.leg u{color:#ffe8a0}
+.card.leg{border:2px solid transparent;border-left-width:6px;background:linear-gradient(135deg,#2a0810,#1a120a 60%,#2a1a08) padding-box,linear-gradient(90deg,#e8c060,#b0102a,#ffe8a0,#b0102a,#e8c060) border-box;background-size:100% 100%,200% 100%;animation:lgborder 2.4s linear infinite;box-shadow:0 0 14px rgba(232,192,96,.35)}
+.card.leg b{color:#ffe08a}.card.leg em{color:#e8c060}
+.flav{display:block;font-style:italic;color:#d8a0a8;margin-top:3px;font-size:12px}
+.goldtxt{color:#e8c060!important}
+.card.ornate{border-color:#e8c060;border-left:6px solid #b0102a;background:linear-gradient(135deg,#2a0810,#1f1811 55%);box-shadow:0 0 12px rgba(232,192,96,.3)}
+.card.ornate .ic svg{display:block;margin:auto}
+.slots.wand .slot.gold{border:2px solid #e8c060;background:radial-gradient(circle at 50% 30%,rgba(232,192,96,.22),rgba(60,10,16,.55));position:relative;box-shadow:inset 0 0 8px rgba(232,192,96,.35)}
+.slots.wand .slot.gold::after{content:'♛';position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:11px;line-height:1;color:#1a0a04;background:#e8c060;border-radius:6px;padding:1px 3px;pointer-events:none}
+.slots.wand.ornate{padding:4px;border-radius:10px;outline:1px solid rgba(232,192,96,.4);outline-offset:2px}
+.goldnote{color:#e8c060;margin:6px 0 2px}
+@keyframes lgshake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.slot.shake{animation:lgshake .45s ease-out}
+.slot.deny{outline:2px solid #ff3a4a;outline-offset:1px;background:rgba(176,16,42,.35)!important}
+@keyframes lgpulse{0%,100%{box-shadow:inset 0 0 8px rgba(232,192,96,.35)}50%{box-shadow:0 0 14px #e8c060,inset 0 0 12px rgba(232,192,96,.8)}}
+.slot.gold.pulse{animation:lgpulse .45s ease-in-out 2}
+b.deny{color:#ff6a6a}
+#lgflash{position:fixed;inset:0;pointer-events:none;z-index:98;opacity:0;background:radial-gradient(circle at 50% 45%,rgba(255,240,190,.95),rgba(232,192,96,.55) 35%,rgba(176,16,42,.35) 70%,transparent)}
+@keyframes lgflash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
+#lgflash.on{animation:lgflash .9s ease-out}
+@media (prefers-reduced-motion:reduce){.chip.leg,.card.leg{animation:none}#lgflash.on{animation-duration:.3s}}

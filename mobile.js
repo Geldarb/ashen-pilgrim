@@ -29,7 +29,7 @@ document.addEventListener('visibilitychange', () => {
 // ---- press-and-hold a page chip for its full name + description ----
 const TIP = document.createElement('div'); TIP.id = 'tip'; TIP.className = 'hidden'; document.body.appendChild(TIP);
 let _lp = null; window.LP_ACTIVE = false;
-function tipHtml(id) { const c = CARDS[id]; return `<div class="tiphead t-${c.t}"><i>${c.icon}</i><b>${c.name}</b></div><div class="tipmeta"><em class="t-${c.t}">${TYPE_NAME[c.t] || ''}</em>${(c.rar || 1) > 1 ? ' · ' + RAR_NAME[c.rar] : ' · common'}${c.mana ? ' · ' + c.mana + ' mana' : ''}${c.el ? ' · ' + c.el : ''}</div><p>${c.desc}</p>`; }
+function tipHtml(id) { const c = CARDS[id]; return `<div class="tiphead t-${c.t}"><i>${c.icon}</i><b>${c.name}</b></div><div class="tipmeta"><em class="t-${c.t}">${TYPE_NAME[c.t] || ''}</em>${c.leg ? ' · <b class="t-leg">legendary</b>' : (c.rar || 1) > 1 ? ' · ' + RAR_NAME[c.rar] : ' · common'}${c.mana ? ' · ' + c.mana + ' mana' : ''}${c.el ? ' · ' + c.el : ''}</div><p>${c.desc}</p>${c.flav ? '<p class="flav">“' + c.flav + '”</p>' : ''}`; }
 function showTip(chip, x, y) { TIP.innerHTML = tipHtml(chip.dataset.card); TIP.classList.remove('hidden'); const w = Math.min(300, innerWidth - 20); TIP.style.width = w + 'px'; TIP.style.left = clamp(x - w / 2, 10, innerWidth - w - 10) + 'px'; TIP.style.top = Math.max(10 + SAFE.t, y - 150) + 'px'; HAP(10); }
 function hideTip() { TIP.classList.add('hidden'); }
 document.addEventListener('pointerdown', e => {
