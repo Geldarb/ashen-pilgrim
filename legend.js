@@ -105,7 +105,7 @@ function lgDebugKit(coop) {
   G.wands = [w, w2]; G.active = 0;
   G.bag = LEGENDARY.filter(id => !['timefracture', 'requiem', 'saintshalo'].includes(id)).concat(['heavy', 'homing', 'double', 'fireball', null, null, null, null]);
   G.maxFlame = Math.max(G.maxFlame, 160); G.flame = G.maxFlame;
-  if (!coop) { showMap(); toast('DEBUG: all Legendary pages + an ornate grimoire with 2 gold slots', 2600); }
+  if (!coop) { showMap(); toast('DEBUG: all 18 Legendaries', 2200); }
 }
 { const _nr = newRun; newRun = function (cls, daily) { _nr(cls, daily); if (DEBUG === 'legendary') lgDebugKit(); }; }
 if (typeof startCoopRun === 'function') { const _sc = startCoopRun; startCoopRun = function (...a) { const r = _sc(...a); if (DEBUG === 'legendary' && G) lgDebugKit(true); return r; }; }
