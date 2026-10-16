@@ -7,7 +7,7 @@ const FIT = { minZoom: .55, last: 1, runs: 0 };
 function fitPanel() {
   const p = UI.querySelector(':scope > .panel'); if (!p) return;
   FIT.runs++;
-  p.style.zoom = ''; p.style.maxHeight = ''; p.style.height = ''; p.classList.remove('cols');
+  p.style.zoom = ''; p.style.removeProperty('--fz'); p.style.maxHeight = ''; p.style.height = ''; p.classList.remove('cols');
   const cs = getComputedStyle(UI), availH = UI.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom), availW = UI.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
   p.style.maxHeight = availH + 'px';
   let z = 1;
@@ -17,7 +17,7 @@ function fitPanel() {
     if (p.scrollWidth <= p.clientWidth + 1 && p.scrollHeight <= p.clientHeight + 1) { FIT.last = 1; p.dataset.zoom = 1; return; }
   }
   const cols = p.classList.contains('cols');
-  const fits = z => { p.style.zoom = z; p.style.maxHeight = (availH / z) + 'px'; if (cols) p.style.height = (availH / z) + 'px'; return p.scrollHeight <= p.clientHeight + 1 && p.scrollWidth <= p.clientWidth + 1; };
+  const fits = z => { p.style.zoom = z; p.style.setProperty('--fz', z); p.style.maxHeight = (availH / z) + 'px'; if (cols) p.style.height = (availH / z) + 'px'; return p.scrollHeight <= p.clientHeight + 1 && p.scrollWidth <= p.clientWidth + 1; };
   if (!fits(1)) { // largest zoom that fits (binary search, 7 layouts max)
     let lo = FIT.minZoom, hi = 1;
     for (let i = 0; i < 7; i++) { const m = (lo + hi) / 2; if (fits(m)) lo = m; else hi = m; }

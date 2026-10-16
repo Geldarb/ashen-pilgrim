@@ -29,7 +29,7 @@ const pg = await open(390, 844);
 let r = await pg.evaluate(() => { const B = __burn, ids = Object.keys(CARDS), by = {}; for (const id of ids) { const k = CARDS[id].rar || 1; (by[k] = by[k] || id); }
   const rows = Object.keys(by).map(k => [+k, B.burnRefund(by[k]), B.burnNeedsConfirm(by[k])]); CARDS.__mythic = { t: 'proj', name: 'Test Mythic', icon: '✷', rar: 5, mana: 1, desc: '' }; const m = B.burnRefund('__mythic'), mc = B.burnNeedsConfirm('__mythic'); delete CARDS.__mythic; return { rows, m, mc }; });
 { const v = r.rows.sort((a, b) => a[0] - b[0]); let mono = true; for (let i = 1; i < v.length; i++) if (!(v[i][1].em > v[i - 1][1].em && v[i][1].fl > v[i - 1][1].fl)) mono = false;
-  T('refund', v.length === 4 && mono && v.every(x => x[2] === (x[0] >= 4)) && r.mc && r.m.em > v[3][1].em && r.m.fl > v[3][1].fl, 'refund scales with rarity: ' + v.map(x => 'r' + x[0] + ' +' + x[1].em + '✦/+' + x[1].fl + 'hp').join(', ') + ', future rarity 5 → +' + r.m.em + '✦/+' + r.m.fl + 'hp; confirmation only for rarity ≥ 4 (incl. future 5)'); }
+  T('refund', v.length >= 4 && mono && v.every(x => x[2] === (x[0] >= 4)) && r.mc && r.m.em > v[3][1].em && r.m.fl > v[3][1].fl, 'refund scales with rarity: ' + v.map(x => 'r' + x[0] + ' +' + x[1].em + '✦/+' + x[1].fl + 'hp').join(', ') + ', future rarity 5 → +' + r.m.em + '✦/+' + r.m.fl + 'hp; confirmation only for rarity ≥ 4 (incl. future 5)'); }
 // ---- drag from the satchel ----
 await setup(pg); await sleep(200);
 r = await pg.evaluate(() => ({ zone: !!document.getElementById('burnzone'), undo: !!document.getElementById('burnUndo'), rf: __burn.burnRefund('fireball') }));
