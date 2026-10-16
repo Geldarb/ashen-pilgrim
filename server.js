@@ -3,7 +3,7 @@
 const http = require('http'), path = require('path'), express = require('express'), { WebSocketServer } = require('ws');
 const app = express(), ROOT = __dirname;
 const fs = require('fs');
-const ASSETS = ['/', '/index.html', '/style.css', '/art.js', '/game.js', '/pages2.js', '/foes.js', '/coop.js', '/audio.js', '/mobile.js', '/legend.js', '/burn.js', '/mythic.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/maskable-512.png', '/icons/apple-touch-icon.png'];
+const ASSETS = ['/', '/index.html', '/style.css', '/art.js', '/game.js', '/pages2.js', '/foes.js', '/coop.js', '/audio.js', '/mobile.js', '/legend.js', '/burn.js', '/mythic.js', '/codex.js', '/layout.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/maskable-512.png', '/icons/apple-touch-icon.png'];
 const PUBLIC = new Set(ASSETS);
 // build version: the deployed commit on Render, else the server start time (local dev)
 const BUILD = (process.env.RENDER_GIT_COMMIT || '').slice(0, 12) || 'dev-' + Date.now().toString(36);

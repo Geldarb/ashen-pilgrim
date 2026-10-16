@@ -987,7 +987,7 @@ function impact(d) { impactT = Math.max(impactT, d); }
 function sfx(x, y, txt, col, size = 16) { return; const w = room || (preview && preview.world); if (!w) return; w.fxs.push({ type: 'sfx', x, y, txt, col, size, life: .7, rot: (fx() - .5) * .4 }); }
 // ---------- input ----------
 const input = { dx: 0, dy: 0, keys: {}, stick: null };
-addEventListener('keydown', e => { input.keys[e.code] = true; if (e.code === 'Space') { dodge(); e.preventDefault(); } if (e.code === 'KeyE') skill(); if (e.code === 'KeyQ') swapWand(); if (e.code === 'Escape' && mode === 'room') togglePause(); keyDir(); });
+addEventListener('keydown', e => { if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return; input.keys[e.code] = true; if (e.code === 'Space') { dodge(); e.preventDefault(); } if (e.code === 'KeyE') skill(); if (e.code === 'KeyQ') swapWand(); if (e.code === 'Escape' && mode === 'room') togglePause(); keyDir(); });
 addEventListener('keyup', e => { input.keys[e.code] = false; keyDir(); });
 function keyDir() { const k = input.keys; if (input.stick) return; input.dx = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0); input.dy = (k.KeyS || k.ArrowDown ? 1 : 0) - (k.KeyW || k.ArrowUp ? 1 : 0); }
 cv.addEventListener('pointerdown', e => { if (mode !== 'room' || paused) return; input.stick = { id: e.pointerId, ox: e.clientX, oy: e.clientY }; cv.setPointerCapture(e.pointerId); });
