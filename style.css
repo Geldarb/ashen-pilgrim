@@ -293,3 +293,4 @@ html,body{height:100%;height:100dvh;overflow:hidden;position:fixed;inset:0;width
 .cxembed .cxhead{margin:0 0 2px}.cxembed .cxfilters{margin:4px 0}
 .cxembed .cxfilters .inp,.cxembed .cxfilters select{min-height:40px}
 @media (orientation:landscape) and (max-height:600px){.panel.editor .slots.wand{grid-template-columns:repeat(auto-fill,minmax(50px,1fr))}.panel.editor .slots.wand .slot{min-height:50px}}
+.edtabs:has(#burnUndo){gap:4px}.edtabs:has(#burnUndo) .edtab{font-size:12px;padding:4px 2px;text-overflow:clip}
