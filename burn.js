@@ -15,9 +15,9 @@ const BRAZIER_SVG = `<svg class="brazier" viewBox="0 0 64 64" aria-hidden="true"
 <path class="fl2" d="M32 18c3 5 7 8 6 14-1 4-3 6-6 6s-6-2-6-6c0-4 3-6 3-9 2 2 2 4 3 5 1-3-1-6 0-10z"/></g>
 <path class="bowl" d="M10 38h44c-1 9-9 14-22 14S11 47 10 38z"/><path class="rim" d="M8 36h48v4H8z"/>
 <path class="leg" d="M22 51l-5 9h4l5-8zM42 51l5 9h-4l-5-8zM30 53h4v7h-4z"/></svg>`;
-function burnZoneHtml() {
+function burnZoneHtml() { // compact: lives on the editor's tab bar; still a >=48px drop target
   const L = BURN.last;
-  return `<div class="burnrow"><div class="burnzone" id="burnzone" role="button" tabindex="0" aria-label="Burn a page">${BRAZIER_SVG}<span><b>Burn</b><i>drag a page here · or hold a page</i></span></div>${L ? `<button class="btn sub undo" id="burnUndo">↶ Undo<span>${CARDS[L.id].icon} ${CARDS[L.id].name}</span></button>` : ''}</div>`;
+  return `${L ? `<button class="undo mini" id="burnUndo" title="Undo burning ${CARDS[L.id].name}" aria-label="Undo burn: ${CARDS[L.id].name}">↶<span>${CARDS[L.id].icon}</span></button>` : ''}<div class="burnzone mini" id="burnzone" role="button" tabindex="0" aria-label="Burn a page (drag a page here, or hold a page)" title="Burn: drag a page here, or hold a page">${BRAZIER_SVG}<b>Burn</b></div>`;
 }
 function burnInfo(html) { const p = UI.querySelector('#info'); if (p) { p.innerHTML = html; p.classList.remove('deny'); void p.offsetWidth; p.classList.add('pulse'); } }
 // ---- the dissolve: a clone of the chip burns away from the top while embers fly ----
@@ -111,7 +111,7 @@ document.addEventListener('pointermove', e => {
     if (back) BURN.last = null; closeBurnSheet();
     _editor(back);
     const bs = UI.querySelector('#bslots'); if (!bs) return;
-    const lbl = bs.previousElementSibling; (lbl || bs).insertAdjacentHTML('beforebegin', burnZoneHtml());
+    const slot = UI.querySelector('#burnslot'); if (slot) slot.innerHTML = burnZoneHtml(); else bs.insertAdjacentHTML('beforebegin', '<div class="burnrow">' + burnZoneHtml() + '</div>');
     const z = UI.querySelector('#burnzone');
     const tap = () => { if (edSel) burnAsk(edSel); else { burnInfo('Drag a page onto the brazier to burn it — or tap a page, then the brazier. On touch, press and hold a page.'); au('click'); } };
     z.addEventListener('click', tap); z.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(); } });

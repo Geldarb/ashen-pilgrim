@@ -736,24 +736,39 @@ function die(abandon) {
 function win() { victory(); }
 
 // ---------- wand editor (drag & drop, touch + mouse) ----------
-let edWand = 0, edSel = null, preview = null, edBack = null;
+let edWand = 0, edSel = null, preview = null, edBack = null, edTab = 'bag';
+// editor tabs: Satchel | Preview | Codex (only the active pane shows; it fills the remaining height)
+function edSetTab(t) {
+  edTab = t; UI.querySelectorAll('.edtab').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  for (const k of ['bag', 'pv', 'cx']) { const p = document.getElementById('pane-' + k); if (p) p.hidden = k !== t; }
+  const cx = document.getElementById('pane-cx'); if (t === 'cx' && cx && !cx.firstChild && window.__codex) __codex.codexMount(cx);
+}
+function edTabsBind() {
+  UI.querySelectorAll('.edtab').forEach(b => b.addEventListener('click', () => { if (edTab !== b.dataset.tab) { edSetTab(b.dataset.tab); au('click'); } }));
+  if (edTab === 'cx') edSetTab('cx');
+  const h = document.getElementById('edhelp'), hb = document.getElementById('edHelpB'), tog = v => { h.hidden = !v; hb.setAttribute('aria-expanded', v); hb.classList.toggle('on', v); };
+  hb.addEventListener('click', () => tog(h.hidden)); on('edHelpX', () => tog(false));
+}
 function editor(back) {
   if (back) edBack = back;
   mode = mode === 'room' ? mode : 'edit';
   edWand = Math.min(edWand, G.wands.length - 1);
   const w = G.wands[edWand];
-  panel(`<h2>📖 Grimoire</h2>
-  ${G.wands.length > 1 ? `<div class="tabs">${G.wands.map((x, i) => `<button class="tab ${i === edWand ? 'on' : ''}" id="wt${i}">${x.name}</button>`).join('')}</div>` : `<p class="small">${w.name}</p>`}
-  <p class="small">delay ${w.delay}s · recharge ${w.recharge}s · mana ${mmax(w)} (+${Math.round(mreg(w))}/s) · ${w.slots.length} slots</p>
+  if (back) edTab = 'bag';
+  panel(`<div class="edL"><div class="edhead"><h2>📖 Grimoire</h2><button class="edhelpB" id="edHelpB" aria-label="How the editor works" aria-expanded="false">?</button></div>
+  ${G.wands.length > 1 ? `<div class="tabs">${G.wands.map((x, i) => `<button class="tab ${i === edWand ? 'on' : ''}" id="wt${i}">${x.name}</button>`).join('')}</div>` : `<p class="small edname">${w.name}</p>`}
+  <p class="small edstats">delay ${w.delay}s · recharge ${w.recharge}s · mana ${mmax(w)} (+${Math.round(mreg(w))}/s) · ${w.slots.length} slots</p>
   <div class="slots wand${w.ornate ? ' ornate' : ''}" id="wslots">${w.slots.map((id, i) => `<div class="slot${lgGold(w, i) ? ' gold' : ''}${window.__mythic && __mythic.myIdx(w) === i ? ' myth' : ''}" data-loc="w:${i}">${cardChip(id)}</div>`).join('')}</div>
   <p class="small goldnote">♛ ${lgGoldN(w)} gold slot${lgGoldN(w) > 1 ? 's' : ''} — this grimoire holds ${lgGoldN(w)} Legendary page${lgGoldN(w) > 1 ? 's' : ''}${lgGoldN(w) < LG_MAXGOLD ? ' (a Gilded Binding adds one, max ' + LG_MAXGOLD + ')' : ' (the maximum)'}.</p>${window.__mythic && w.myth ? (eq => `<p class="small mythnote">✶ Mythic slot (last): ${eq ? CARDS[eq].icon + ' ' + CARDS[eq].name + ' — ' + __mythic.myCurseOf(eq).icon + ' ' + __mythic.myCurseOf(eq).name + ' (' + __mythic.myCurseOf(eq).desc + ')' : 'empty — only a Mythic page fits here'}</p>`)(__mythic.myEquipped(w)) : ''}
-  <canvas id="pv" width="300" height="120"></canvas>
-  <p class="cast" id="castDesc">${describeCast(w)}</p>
-  <p class="small">Satchel</p>
-  <div class="slots bag" id="bslots">${G.bag.map((id, i) => `<div class="slot" data-loc="b:${i}">${cardChip(id)}</div>`).join('')}</div>
-  <p class="info" id="info">Drag pages between your satchel and grimoire (or tap one, then a slot). Read left→right: glyphs power up the next attack; chants cast the next N pages together; sigils are passive and never cast.</p>
-  <div class="legend"><span class="t-proj">Attack</span><span class="t-mod">Glyph</span><span class="t-multi">Chant</span><span class="t-trig">Trigger</span><span class="t-curse">Forbidden</span><span class="t-rare">Rare</span><span class="t-sigil">Sigil</span><span class="t-leg">Legendary</span></div>
-  <button class="btn" id="done">Done</button>`, 'wide');
+  <p class="info" id="info">Tap or drag a page. Hold a page for details · <b>?</b> for help.</p></div>
+  <div class="edR"><div class="edtabs" role="tablist"><button class="edtab${edTab === 'bag' ? ' on' : ''}" data-tab="bag" role="tab">🎒 Satchel</button><button class="edtab${edTab === 'pv' ? ' on' : ''}" data-tab="pv" role="tab">👁 Preview</button><button class="edtab${edTab === 'cx' ? ' on' : ''}" data-tab="cx" role="tab">📜 Codex</button><span class="burnslot" id="burnslot"></span></div>
+  <div class="edpane" id="pane-bag"${edTab === 'bag' ? '' : ' hidden'}><div class="slots bag" id="bslots">${G.bag.map((id, i) => `<div class="slot" data-loc="b:${i}">${cardChip(id)}</div>`).join('')}</div></div>
+  <div class="edpane" id="pane-pv"${edTab === 'pv' ? '' : ' hidden'}><canvas id="pv" width="300" height="120"></canvas><p class="cast" id="castDesc">${describeCast(w)}</p><p class="small">The training dummy shows how this grimoire casts, left → right.</p></div>
+  <div class="edpane" id="pane-cx"${edTab === 'cx' ? '' : ' hidden'}></div></div>
+  <div class="edhelp" id="edhelp" hidden><p class="small">Drag pages between your satchel and grimoire (or tap one, then a slot). Read left→right: glyphs power up the next attack; chants cast the next N pages together; sigils are passive and never cast.</p><p class="small">Burn a page: drag it onto the 🔥 brazier, tap it then the brazier, or hold it. Undo brings back the last burn while the editor is open.</p><p class="small">A long satchel scrolls with a quick swipe; to drag a page from it, touch it for a moment first (or move sideways).</p>
+  <div class="legend"><span class="t-proj">Attack</span><span class="t-mod">Glyph</span><span class="t-multi">Chant</span><span class="t-trig">Trigger</span><span class="t-curse">Forbidden</span><span class="t-rare">Rare</span><span class="t-sigil">Sigil</span><span class="t-leg">Legendary</span><span class="t-myth">Mythic</span></div><button class="btn sub" id="edHelpX">Got it</button></div>
+  <button class="btn" id="done">Done</button>`, 'wide editor nocols');
+  edTabsBind();
   G.wands.forEach((x, i) => on('wt' + i, () => { edWand = i; edSel = null; editor(); }));
   on('done', () => { saveRun(); const b = edBack; edBack = null; edSel = null; b(); });
   if (edSel) { const s = UI.querySelector(`[data-loc="${edSel}"]`); s && s.classList.add('sel'); }
@@ -768,19 +783,26 @@ function setupDrag() {
     sl.addEventListener('pointerdown', e => {
       const chip = sl.querySelector('.chip'); const loc = sl.dataset.loc;
       if (chip) { const c = CARDS[chip.dataset.card]; document.getElementById('info').innerHTML = `<b class="t-${c.t}">${c.name}</b> — ${TYPE_NAME[c.t]}${c.mana ? ', ' + c.mana + ' mana' : ''}. ${c.desc}`; }
-      drag = { loc, x: e.clientX, y: e.clientY, chip, ghost: null, id: e.pointerId };
+      drag = { loc, x: e.clientX, y: e.clientY, chip, ghost: null, id: e.pointerId, t0: performance.now() };
       e.preventDefault();
     });
   });
 }
 addEventListener('pointermove', e => {
-  if (!drag || !drag.chip || e.pointerId !== drag.id) return;
+  if (!drag || e.pointerId !== drag.id) return;
+  if (drag.sc) { drag.sc.scrollTop = drag.st - (e.clientY - drag.y); return; } // finger-scrolling the satchel
+  if (!drag.ghost && e.pointerType !== 'mouse' && drag.loc[0] === 'b') { // touch: a quick vertical swipe in a scrollable satchel scrolls it; touch-and-pause (200ms) or a sideways move drags the page
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y, sc = document.getElementById('pane-bag');
+    if (Math.hypot(dx, dy) > 8 && performance.now() - drag.t0 < 200 && Math.abs(dy) > Math.abs(dx) * 1.2 && sc && sc.scrollHeight > sc.clientHeight + 2 && (dy > 0 ? sc.scrollTop > 0 : sc.scrollTop < sc.scrollHeight - sc.clientHeight - 1)) { drag.sc = sc; drag.st = sc.scrollTop + dy; sc.scrollTop = drag.st - dy; return; }
+  }
+  if (!drag.chip) return;
   if (!drag.ghost && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 8) { drag.ghost = drag.chip.cloneNode(true); drag.ghost.classList.add('ghost'); document.body.appendChild(drag.ghost); drag.chip.style.opacity = .3; }
-  if (drag.ghost) { drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px'; }
+  if (drag.ghost) { drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px'; const el = document.elementFromPoint(e.clientX, e.clientY), tb = el && el.closest('.edtab'); if (tb && tb.dataset.tab === 'bag' && edTab !== 'bag') edSetTab('bag'); } // dragging over the Satchel tab opens it
 });
 addEventListener('pointerup', e => {
   if (!drag || e.pointerId !== drag.id) return;
   const d = drag; drag = null;
+  if (d.sc) { window.LP_ACTIVE = false; return; }
   if (window.LP_ACTIVE) { window.LP_ACTIVE = false; if (!d.ghost) return; if (!(window.__burn && __burn.isOpen())) { d.ghost.remove(); editor(); return; } __burn.closeBurnSheet(); } // press-and-hold showed the page info / burn sheet (dragging on drops normally)
   if (d.ghost) { d.ghost.remove(); const el = document.elementFromPoint(e.clientX, e.clientY); if (el && el.closest('#burnzone') && window.__burn) { __burn.BURN.dragged = (__burn.BURN.dragged || 0) + 1; return __burn.burnAsk(d.loc); } const sl = el && el.closest('.slot'); if (sl) moveCard(d.loc, sl.dataset.loc); else editor(); return; }
   if (edSel && edSel !== d.loc) { const f = edSel; edSel = null; moveCard(f, d.loc); }

@@ -15,7 +15,7 @@ const measure = pg => pg.evaluate(() => {
   const p = document.querySelector('#ui > .panel');
   if (p) { const r = p.getBoundingClientRect(); const z = parseFloat(p.style.zoom || 1);
     o.p = { top: r.top, bot: r.bottom, left: r.left, right: r.right, sh: p.scrollHeight, ch: p.clientHeight, sw: p.scrollWidth, cw: p.clientWidth, z };
-    o.bad = [...p.querySelectorAll('*')].filter(e => { const cs = getComputedStyle(e); return /auto|scroll/.test(cs.overflowY) && e.scrollHeight > e.clientHeight + 1 && !e.closest('.fitlist'); }).map(e => e.id || e.className).slice(0, 3);
+    o.bad = [...p.querySelectorAll('*')].filter(e => { const cs = getComputedStyle(e); return /auto|scroll/.test(cs.overflowY) && e.scrollHeight > e.clientHeight + 1 && !e.closest('.fitlist, .edpane'); }).map(e => e.id || e.className).slice(0, 3);
     o.lists = [...p.querySelectorAll('.fitlist')].map(e => ({ id: e.id || e.className, ch: e.clientHeight, sh: e.scrollHeight }));
   }
   o.tag = document.querySelector('#ui > .panel') ? (document.querySelector('#ui > .panel h2') || {}).textContent || '' : 'mode:' + window.__ashen.mode;
@@ -29,14 +29,14 @@ for (const [w, h, mob] of SIZES) {
     await pg.goto(base + '/' + dbg, { timeout: 90000 }); await pg.waitForFunction('window.__ready', { timeout: 90000 }); await sleep(300);
     const screens = dbg ? [
       ['debug-camp', 'showCamp()'], ['debug-codex', 'showCamp(); document.getElementById("codexB").click()'],
-      ['debug-editor', 'newRun("pilgrim"); editor(showMap)'], ['debug-editor-w2', 'edWand = Math.min(1, G.wands.length - 1); editor(showMap)'],
+      ['debug-editor', 'newRun("pilgrim"); editor(showMap)'], ['debug-editor-codex', 'edSetTab("cx")'], ['debug-editor-preview', 'edSetTab("pv")'], ['debug-editor-bag', 'edSetTab("bag")'], ['debug-editor-w2', 'edWand = Math.min(1, G.wands.length - 1); editor(showMap)'],
       ['debug-burnsheet', 'editor(showMap); const c = document.querySelector("#bslots .chip[data-card]") || document.querySelector(".slot .chip[data-card]"); __burn.burnSheet && c && __burn.burnSheet(c.dataset.card, c)'],
       ['mythic-offer', 'G.mythicRun = null; __mythic.myOffer("The final page", "A Mythic page lies here.", 0, showMap)'],
       ['archive', '__mythic.myArchive()'],
     ] : [
       ['camp', 'showCamp()'], ['codex', 'showCamp(); document.getElementById("codexB").click()'], ['codex-legendary-filter', 'const s = document.getElementById("cxrar"); s.value = "4"; s.dispatchEvent(new Event("change"))'],
       ['settings', 'showSettings(showCamp)'], ['coop-menu', 'coopMenu()'], ['lobby', 'coopMenu(); document.getElementById("hostB").click()', '#rc'],
-      ['camp-again', 'leaveCoop(); showCamp()'], ['map', 'newRun("pilgrim")'], ['editor', 'editor(showMap)'], ['reward', 'stepRng("t"); reward("Spoils of battle", .5)'],
+      ['camp-again', 'leaveCoop(); showCamp()'], ['map', 'newRun("pilgrim")'], ['editor', 'editor(showMap)'], ['editor-preview', 'edSetTab("pv")'], ['editor-codex', 'edSetTab("cx")'], ['editor-help', 'edSetTab("bag"); document.getElementById("edHelpB").click()'], ['reward', 'stepRng("t"); reward("Spoils of battle", .5)'],
       ['reward-boss', 'stepRng("b"); reward("Boss defeated! Claim a reward", .6, { leg: 1, orn: 1 })'], ['shrine', 'stepRng("s"); shrine()'], ['merchant', 'stepRng("m"); merchant()'], ['treasure', 'stepRng("tr"); treasure()'],
       ['room', 'showMap(); enterDoor("fight")', null, 900], ['pause', 'togglePause()'], ['pause-codex', 'document.getElementById("codexP").click()'],
       ['pause-settings', 'closeUI(); paused = false; togglePause(); document.getElementById("setB") && document.getElementById("setB").click()'],
@@ -54,6 +54,8 @@ for (const [w, h, mob] of SIZES) {
         ok(id, !m.bad.length, 'no scrolling outside .fitlist lists ' + m.bad.join(','));
         zooms[id] = m.p.z;
       }
+      if (name === 'lobby') { const L = await pg.evaluate(() => { const p = [...document.querySelectorAll('.panel p')].find(x => /Your mage/.test(x.textContent)), t = p && p.nextElementSibling; if (!t) return null; const a = p.getBoundingClientRect(), b = t.getBoundingClientRect(); return { dx: Math.abs(a.left - b.left), gap: b.top - a.bottom }; });
+        ok(id, L && L.dx < 30 && L.gap >= -2 && L.gap < 24, '"Your mage" label sits right above the mage buttons ' + JSON.stringify(L)); }
       await pg.screenshot({ path: SH + tag + '-' + name + '.png' });
     }
     await pg.close();

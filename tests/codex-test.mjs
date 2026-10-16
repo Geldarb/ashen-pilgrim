@@ -37,11 +37,11 @@ const det = async id => { await pg.tap(`#cxgrid [data-cx="${id}"]`); await sleep
 r = await det('requiem');
 ok('detail legendary', /Requiem/.test(r.t) && /Legendary/i.test(r.t) && /Cost: \d+ mana/.test(r.t) && /Drawback:/.test(r.t) && /“.+”/.test(r.t) && /cxbig/.test(r.h), 'Legendary detail: icon, name, rarity, cost, description, drawback, flavour');
 await pg.screenshot({ path: SH + 'codex-390-detail-legendary.png' });
-r = await det('covenant');
-ok('detail mythic', /Covenant of Ruin/.test(r.t) && /Mythic/.test(r.t) && /Curse:/.test(r.t) && /cxdet myth/.test(r.h), 'Mythic detail shows its curse and the prismatic class: ' + (r.t.match(/Curse:[^“]*/) || [''])[0].slice(0, 70));
+r = await det('covenant'); const covCost = (r.t.match(/Cost: [^·A-Z]*/) || [''])[0];
+ok('detail mythic', /Covenant of Ruin/.test(r.t) && /50% of max flame/.test(covCost) && /Mythic/.test(r.t) && /Curse:/.test(r.t) && /cxdet myth/.test(r.h), 'Mythic detail shows its cost (' + covCost.trim() + '), curse and the prismatic class: ' + (r.t.match(/Curse:[^“]*/) || [''])[0].slice(0, 70));
 await pg.screenshot({ path: SH + 'codex-390-detail-mythic.png' });
 r = await det('bloodwax');
-ok('detail forbidden', /Drawback: .*HP/.test(r.t), 'Forbidden page detail shows its drawback: ' + r.t.trim().slice(0, 80));
+ok('detail forbidden', /Drawback: .*HP/.test(r.t) && /Cost: 3 HP \(no mana\)/.test(r.t), 'Forbidden page detail shows its drawback: ' + r.t.trim().slice(0, 80));
 // filters + search
 const setSel = (id, v) => E(`(() => { const s = document.getElementById('${id}'); s.value = '${v}'; s.dispatchEvent(new Event('change')); return [...document.querySelectorAll('#cxgrid .cxe')].map(e => e.className); })()`);
 let cls = await setSel('cxcat', 'mod'); ok('filter category', cls.length > 10 && cls.every(c => c.includes('t-mod')), `category filter Glyph → ${cls.length} glyph pages`);

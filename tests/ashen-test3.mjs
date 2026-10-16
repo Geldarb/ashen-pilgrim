@@ -43,7 +43,7 @@ for (const [w,h,m] of [[390,844,true],[1280,800,false]]) {
     let ok;
     if (kind==='kinds') ok = exp.every(k => res.kinds.includes(k)); else if (kind==='spreadAngles') ok = res.offs >= exp; else ok = res.desc.startsWith(exp);
     check(w, ok && !res.desc.startsWith('No'), `${name}: ${res.desc} | kinds ${res.kinds} | dmg to dummy ${res.dmg}`);
-    if (['quad','blackhole','meteor','expiry-nova','orbit-wisp','mine-bolt','n-stormorb-gravity','n-hexa-needle','n-tide-echo','n-canon-ray','n-sigils-familiar','n-twin-spire'].includes(name)) { const el = await pg.$('#pv'); await el.screenshot({ path: `${OUT}/${tag}-pv-${name}-${w}.png` }); }
+    if (['quad','blackhole','meteor','expiry-nova','orbit-wisp','mine-bolt','n-stormorb-gravity','n-hexa-needle','n-tide-echo','n-canon-ray','n-sigils-familiar','n-twin-spire'].includes(name)) { await pg.evaluate(() => window.edSetTab && edSetTab('pv')); const el = await pg.$('#pv'); await el.screenshot({ path: `${OUT}/${tag}-pv-${name}-${w}.png` }); }
   }
   await pg.screenshot({ path: `${OUT}/${tag}-editor-${w}x${h}.png` });
   // room fps with mixed spells (mobile: 4x CPU throttle)

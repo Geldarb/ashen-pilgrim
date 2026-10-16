@@ -92,7 +92,7 @@ for (const [w, h] of [[390, 844], [844, 390], [360, 780]]) {
   const p = await open(w, h, '/?debug=legendary'); const sz = w + 'x' + h;
   await p.evaluate(() => { edWand = 0; editor(showMap); }); await sleep(300);
   r = await p.evaluate(() => { const z = document.getElementById('burnzone').getBoundingClientRect(), u = document.getElementById('ui'); return { gold: document.querySelectorAll('#wslots .slot.gold').length, zw: z.width, zh: z.height, over: u.scrollWidth > u.clientWidth + 1 }; });
-  T('shots', r.gold === 4 && r.zh >= 44 && r.zw >= 150 && !r.over, sz + ': 4-gold-slot editor + brazier (' + Math.round(r.zw) + '×' + Math.round(r.zh) + ' px touch target), no horizontal overflow');
+  T('shots', r.gold === 4 && r.zh >= 48 && r.zw >= 48 && !r.over, sz + ': 4-gold-slot editor + brazier (' + Math.round(r.zw) + '×' + Math.round(r.zh) + ' px touch target), no horizontal overflow');
   await p.screenshot({ path: SH + tag + '-gold4-editor-' + sz + '.png' });
   await p.evaluate(() => document.getElementById('burnzone').scrollIntoView({ block: 'center' })); await sleep(100);
   { const [x, y] = await box(p, '[data-loc="b:0"] .chip'); await p.mouse.move(x, y); await p.mouse.down(); await sleep(650); await p.mouse.up(); await sleep(250); }

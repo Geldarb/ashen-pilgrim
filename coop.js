@@ -46,7 +46,7 @@ function lobby() {
   panel(`<h2>Co-op lobby</h2><p class="small">Room code</p><div class="roomcode" id="rc">${NET.code}</div>
   <button class="btn sub" id="copy">🔗 Copy invite link</button><p class="small linkline">${link}</p>
   <div class="roster">${NET.players.map(p => `<div class="mate"><i style="background:${slotCol(p.slot)}"></i>${p.name.replace(/</g, '')}${p.host ? ' · host' : ''}${p.id === NET.id ? ' (you)' : ''}</div>`).join('')}${'<div class="mate empty"><i></i>open seat</div>'.repeat(Math.max(0, 4 - NET.players.length))}</div>
-  <p class="small">Your mage</p><div class="tabs"><button class="tab ${NET.cls === 'pilgrim' ? 'on' : ''}" id="cK">Kai Emberline 🔥</button><button class="tab ${NET.cls === 'witch' ? 'on' : ''}" id="cL" ${camp.witch ? '' : 'disabled'}>Lumi Vesper 🏮${camp.witch ? '' : ' 🔒'}</button></div>
+  <div class="magepick"><p class="small">Your mage</p><div class="tabs"><button class="tab ${NET.cls === 'pilgrim' ? 'on' : ''}" id="cK">Kai Emberline 🔥</button><button class="tab ${NET.cls === 'witch' ? 'on' : ''}" id="cL" ${camp.witch ? '' : 'disabled'}>Lumi Vesper 🏮${camp.witch ? '' : ' 🔒'}</button></div></div>
   ${NET.host ? `<button class="btn hot" id="begin">Begin the ascent (${NET.players.length} mage${NET.players.length > 1 ? 's' : ''})</button>` : '<p class="stat">Waiting for the host to begin…</p>'}
   <button class="btn sub" id="lv">Leave</button>`, 'title');
   on('copy', () => { (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(() => toast('Invite link copied'), () => toast(link, 4000)); });

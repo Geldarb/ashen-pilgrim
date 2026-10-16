@@ -233,3 +233,63 @@ html,body{height:100%;height:100dvh;overflow:hidden;position:fixed;inset:0;width
 .panel.cols #burnzone{min-height:58px}
 /* keep the brazier a >=48px touch target even when the panel is scaled down */
 #burnzone,.panel.cols #burnzone{min-height:calc(50px / var(--fz,1))}
+/* ---- grimoire editor: pinned grimoire + tabbed Satchel | Preview | Codex (fills the remaining height) ---- */
+.panel.editor{height:calc(100dvh - 24px);padding:10px 12px;max-width:520px}
+.edL{flex:none;display:flex;flex-direction:column}
+.edhead{position:relative;display:flex;align-items:center;justify-content:center;min-height:40px}
+.edhead h2{margin:0}
+.edhelpB{position:absolute;right:0;top:0;width:40px;height:40px;border-radius:50%;border:1px solid #8a6a3a;background:#1a140e;color:#ffcf85;font:inherit;font-size:18px;font-weight:bold;cursor:pointer}
+.edhelpB.on{background:#4a3018;box-shadow:0 0 10px rgba(255,170,60,.4)}
+.panel.editor .edname,.panel.editor .edstats{margin:2px 0}
+.panel.editor .slots.wand{margin:4px 0}
+.panel.editor .goldnote,.panel.editor .mythnote{font-size:11px!important;margin:1px 0;line-height:1.25}
+.panel.editor .info{min-height:0;margin:3px 0 0;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.edR{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.edtabs{display:flex;gap:6px;align-items:stretch;margin:6px 0}
+.edtab{flex:1;min-width:0;min-height:48px;padding:4px 6px;border-radius:10px;border:1px solid #6b4a26;background:#1a140e;color:#c9b693;font:inherit;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.edtab.on{background:linear-gradient(#4a3018,#2a1a0c);border-color:#d8964a;color:#ffe2b0;box-shadow:inset 0 -3px 0 #ff9a40}
+.burnslot{display:flex;gap:6px;flex:none}
+.burnzone.mini{flex:none;width:58px;min-height:50px!important;padding:2px;flex-direction:column;justify-content:center;gap:0;border-radius:10px}
+.burnzone.mini .brazier{width:32px;height:32px}.burnzone.mini b{font-size:11px;line-height:1}
+.undo.mini{flex:none;width:48px;min-height:50px;border-radius:10px;border:1px solid #8a6a3a;background:#1a140e;color:#ffcf85;font:inherit;font-size:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.undo.mini span{font-size:14px}
+.edpane{flex:1 1 auto;min-height:150px;overflow-y:auto;overscroll-behavior:contain;border:1px solid #3a2a18;border-radius:10px;background:rgba(0,0,0,.18);padding:6px}
+.edpane[hidden]{display:none!important}
+#pane-bag .slots.bag{margin:0;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px}
+#pane-bag .slot{min-height:58px}
+#pane-pv{display:flex;flex-direction:column;align-items:center;justify-content:center}
+#pane-pv #pv{width:100%;max-width:520px;margin:0 auto 4px}
+#pane-cx{display:flex;flex-direction:column;overflow:hidden;padding:4px}
+.cxembed{display:flex;flex-direction:column;flex:1;min-height:0}
+.cxembed .cxtitle{font-size:15px;color:#ffcf85}
+.cxembed .cxgrid{flex:1 1 auto;min-height:60px}
+.cxembed .cxdet{max-height:34%;overflow-y:auto}
+.edhelp{position:absolute;left:10px;right:10px;top:54px;z-index:6;background:linear-gradient(#2a1f14,#17110b);border:1px solid #c08040;border-radius:12px;padding:10px 12px;box-shadow:0 10px 40px rgba(0,0,0,.8);text-align:left}
+.edhelp[hidden]{display:none}
+.edhelp .legend{margin:6px 0}.edhelp .btn{margin:6px 0 0}
+.legend span.t-myth{background:linear-gradient(90deg,#ff6ad5,#ffd36a,#6affc8,#6ab4ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.panel.editor #done{margin:8px 0 0;flex:none}
+@media (max-height:700px){.panel.editor{padding:8px 10px}.panel.editor .slots.wand .slot{min-height:46px}.edtab{min-height:46px;font-size:13px}.panel.editor #done{min-height:44px;padding-top:6px;padding-bottom:6px}}
+/* landscape: grimoire on the left, tabbed panel on the right */
+@media (orientation:landscape) and (max-height:600px){
+  .panel.editor{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);grid-template-rows:minmax(0,1fr) auto;column-gap:14px;max-width:min(calc(100vw - 24px),920px);width:100%}
+  .panel.editor .edL{grid-column:1;grid-row:1;overflow:hidden}
+  .panel.editor .edR{grid-column:2;grid-row:1/3}
+  .panel.editor #done{grid-column:1;grid-row:2}
+  .panel.editor .edtabs{margin-top:0}
+  .edpane{min-height:100px}
+}
+.edR{min-height:auto}
+.edpane{min-height:180px}
+.panel.editor .slots.wand{grid-template-columns:repeat(auto-fill,minmax(50px,1fr));gap:5px}
+.panel.editor .slots.wand .slot{min-height:50px}
+@media (max-width:380px){#pane-bag .slots.bag{grid-template-columns:repeat(auto-fill,minmax(54px,1fr))}#pane-bag .slot{min-height:54px}}
+@media (max-height:700px){.panel.editor .slots.wand{grid-template-columns:repeat(auto-fill,minmax(46px,1fr))}.panel.editor .slots.wand .slot{min-height:46px}.edhead{min-height:36px}.edhelpB{width:36px;height:36px}.panel.editor h2{font-size:20px}}
+@media (orientation:landscape) and (max-height:600px){.edpane{min-height:100px}}
+.edR{min-height:240px}.edpane{flex:1 1 0}
+@media (orientation:landscape) and (max-height:600px){.edR{min-height:0}}
+@media (max-height:700px) and (orientation:portrait){.edR{min-height:252px}}
+.cxembed .cxdet.hint{display:none}
+.cxembed .cxhead{margin:0 0 2px}.cxembed .cxfilters{margin:4px 0}
+.cxembed .cxfilters .inp,.cxembed .cxfilters select{min-height:40px}
+@media (orientation:landscape) and (max-height:600px){.panel.editor .slots.wand{grid-template-columns:repeat(auto-fill,minmax(50px,1fr))}.panel.editor .slots.wand .slot{min-height:50px}}
